@@ -317,6 +317,7 @@ StreamProxy::StreamProxy(QObject *parent)
 QUrl StreamProxy::wrap(const QUrl &url, bool hls, const QString &stationName, const QString &favicon)
 {
     // A new station: forget the previous song, and let old sessions go stale.
+    closeConnections();
     ++m_generation;
     setMetadata(m_generation, {}, {});
 
@@ -330,6 +331,12 @@ QUrl StreamProxy::wrap(const QUrl &url, bool hls, const QString &stationName, co
     m_targetId = id;
     m_target = {url, m_generation, stationName, favicon};
     return QUrl(u"http://127.0.0.1:%1/%2"_s.arg(m_server.serverPort()).arg(id));
+}
+
+void StreamProxy::closeConnections()
+{
+    for (auto *socket : m_server.findChildren<QTcpSocket *>())
+        socket->abort();
 }
 
 void StreamProxy::setMetadata(int generation, const QString &artist, const QString &title)

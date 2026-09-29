@@ -112,6 +112,10 @@ public:
     // Returns a URL the media player should open instead of `url`. HLS
     // playlists are returned unchanged, since their segment URLs are relative.
     Q_INVOKABLE QUrl wrap(const QUrl &url, bool hls, const QString &stationName, const QString &favicon);
+    // Ends all player connections. The player's reader thread blocks on our
+    // socket, and its teardown blocks the UI thread we serve from, so
+    // connections must end before the player lets go of a stream.
+    Q_INVOKABLE void closeConnections();
 
 Q_SIGNALS:
     void metadataChanged();

@@ -75,9 +75,16 @@ Kirigami.ApplicationWindow {
     function streamSource(station) {
         return StreamProxy.wrap(station.url, station.hls ?? false, station.name, station.favicon ?? "");
     }
+    function stop() {
+        player.stop();
+        // stop() schedules the player's teardown, which waits for its reader
+        // thread; end our connections first so that reader isn't left
+        // blocked on a socket only this (then waiting) thread can serve.
+        StreamProxy.closeConnections();
+    }
     function togglePlayback() {
         // Live streams: stop instead of pausing into an ever-growing buffer.
-        playing ? player.stop() : resume();
+        playing ? stop() : resume();
     }
     function step(delta) {
         if (queue.length === 0)
@@ -140,7 +147,10 @@ Kirigami.ApplicationWindow {
     onRecentChanged: settings.recentJson = JSON.stringify(recent)
     onQueueChanged: settings.queueJson = JSON.stringify(queue)
     onCurrentChanged: settings.currentJson = current ? JSON.stringify(current) : ""
-    onClosing: settings.wasPlaying = playing
+    onClosing: {
+        settings.wasPlaying = playing;
+        StreamProxy.closeConnections();
+    }
 
     MediaPlayer {
         id: player
@@ -169,8 +179,8 @@ Kirigami.ApplicationWindow {
         }
         onQuitRequested: root.close()
         onPlayRequested: root.resume()
-        onPauseRequested: player.stop()
-        onStopRequested: player.stop()
+        onPauseRequested: root.stop()
+        onStopRequested: root.stop()
         onPlayPauseRequested: root.togglePlayback()
         onNextRequested: root.step(1)
         onPreviousRequested: root.step(-1)
