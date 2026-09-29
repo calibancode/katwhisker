@@ -187,7 +187,21 @@ Kirigami.ApplicationWindow {
     Component {
         id: aboutPage
         FormCard.AboutPage {
+            id: aboutView
             aboutData: root.aboutData
+
+            // Size the window to the page's content once it's laid out, so it
+            // neither scrolls nor leaves empty space (capped to the screen).
+            function fitWindow() {
+                const window = aboutView.Window.window;
+                if (!window || aboutView.flickable.height <= 0) {
+                    Qt.callLater(fitWindow);
+                    return;
+                }
+                const overflow = aboutView.flickable.contentHeight - aboutView.flickable.height;
+                window.height = Math.min(window.height + overflow, root.screen.desktopAvailableHeight * 0.9);
+            }
+            Component.onCompleted: Qt.callLater(fitWindow)
         }
     }
 
@@ -418,11 +432,7 @@ Kirigami.ApplicationWindow {
                             QQC2.MenuItem {
                                 text: i18n("About Katwhisker")
                                 icon.name: "help-about"
-                                onTriggered: root.pageStack.pushDialogLayer(aboutPage, {}, {
-                                    // Big enough to show the whole page without resizing.
-                                    width: Kirigami.Units.gridUnit * 32,
-                                    height: Math.min(Kirigami.Units.gridUnit * 44, root.screen.desktopAvailableHeight * 0.9)
-                                })
+                                onTriggered: root.pageStack.pushDialogLayer(aboutPage, {}, { width: Kirigami.Units.gridUnit * 32 })
                             }
                         }
                     }
