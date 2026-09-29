@@ -1,0 +1,40 @@
+# SPDX-FileCopyrightText: 2026 calibancode
+# SPDX-License-Identifier: CC0-1.0
+
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # Arch ships current Qt 6 and KDE Frameworks 6.
+    container: archlinux:latest
+    steps:
+      - name: Install dependencies
+        run: |
+          pacman -Syu --noconfirm --needed git base-devel cmake ninja extra-cmake-modules \
+            qt6-base qt6-declarative qt6-multimedia qt6-svg \
+            kirigami kirigami-addons kcoreaddons ki18n \
+            appstream desktop-file-utils reuse
+
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: |
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build
+
+      - name: Lint QML
+        run: cmake --build build --target katwhisker_qmllint
+
+      - name: Check licensing (REUSE)
+        run: reuse lint
+
+      - name: Validate metainfo and desktop file
+        run: |
+          # Offline: the screenshot URL points at a release tag.
+          appstreamcli validate --no-net io.github.calibancode.katwhisker.metainfo.xml
+          desktop-file-validate io.github.calibancode.katwhisker.desktop
