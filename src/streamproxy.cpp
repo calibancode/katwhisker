@@ -390,16 +390,19 @@ void StreamProxy::startSession(QTcpSocket *socket, const Target &target)
     };
     auto session = std::make_shared<Session>();
 
-    auto report = [this, generation, session](const QString &artist, const QString &title) {
-        session->gotMetadata = true;
+    // Callbacks stored inside the session must not own it (a shared_ptr
+    // cycle would keep it, and its half-recorded song, alive forever).
+    Session *self = session.get();
+    auto report = [this, generation, self](const QString &artist, const QString &title) {
+        self->gotMetadata = true;
         setMetadata(generation, artist, title);
     };
-    session->ogg.onTags = [session, report](const QString &artist, const QString &title) {
+    session->ogg.onTags = [self, report](const QString &artist, const QString &title) {
         report(artist, title);
-        session->oggEvents.append({-1, false, artist, title}); // belongs to the latest boundary
+        self->oggEvents.append({-1, false, artist, title}); // belongs to the latest boundary
     };
-    session->ogg.onStreamStart = [session](qsizetype offset) {
-        session->oggEvents.append({offset, true, {}, {}});
+    session->ogg.onStreamStart = [self](qsizetype offset) {
+        self->oggEvents.append({offset, true, {}, {}});
     };
 
     connect(reply, &QNetworkReply::redirected, reply, &QNetworkReply::redirectAllowed);
@@ -419,10 +422,10 @@ void StreamProxy::startSession(QTcpSocket *socket, const Target &target)
 
         if (const int metaInt = reply->rawHeader("icy-metaint").toInt(); metaInt > 0) {
             session->icy.emplace(metaInt);
-            session->icy->onTitle = [report, session](const QString &streamTitle, qsizetype offset) {
+            session->icy->onTitle = [report, self](const QString &streamTitle, qsizetype offset) {
                 const auto [artist, title] = splitStreamTitle(streamTitle);
                 report(artist, title);
-                session->icyEvents.append({offset, true, artist, title});
+                self->icyEvents.append({offset, true, artist, title});
             };
         }
 
