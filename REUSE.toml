@@ -12,3 +12,8 @@ SPDX-License-Identifier = "GPL-3.0-or-later"
 path = "screenshots/**"
 SPDX-FileCopyrightText = "2026 calibancode"
 SPDX-License-Identifier = "CC-BY-SA-4.0"
+
+[[annotations]]
+path = "po/**"
+SPDX-FileCopyrightText = "2026 calibancode"
+SPDX-License-Identifier = "GPL-3.0-or-later"

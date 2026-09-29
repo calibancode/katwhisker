@@ -45,6 +45,9 @@ target_link_libraries(katwhisker PRIVATE
 )
 
 install(TARGETS katwhisker ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
+
+# Translations: po/<lang>/katwhisker.po, updated with po/update.sh.
+ki18n_install(po)
 install(FILES io.github.calibancode.katwhisker.desktop DESTINATION ${KDE_INSTALL_APPDIR})
 install(FILES io.github.calibancode.katwhisker.metainfo.xml DESTINATION ${KDE_INSTALL_METAINFODIR})
 install(FILES icons/io.github.calibancode.katwhisker.svg DESTINATION ${KDE_INSTALL_ICONDIR}/hicolor/scalable/apps)

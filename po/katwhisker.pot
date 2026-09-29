@@ -1,0 +1,268 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the katwhisker package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: katwhisker\n"
+"Report-Msgid-Bugs-To: https://github.com/calibancode/katwhisker/issues\n"
+"POT-Creation-Date: 2026-09-29 03:49-0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/main.cpp:37
+msgid "Katwhisker"
+msgstr ""
+
+#: src/main.cpp:38
+msgid "A tiny web radio player powered by radio-browser.info"
+msgstr ""
+
+#: src/main.cpp:44
+msgid "Developer"
+msgstr ""
+
+#: src/main.cpp:45
+msgid "Station directory"
+msgstr ""
+
+#: src/recordings.cpp:159
+msgid "No such recording"
+msgstr ""
+
+#: src/qml/Main.qml:45
+msgctxt "artist – song title"
+msgid "%1 – %2"
+msgstr ""
+
+#: src/qml/Main.qml:196
+msgid "Thanks for voting!"
+msgstr ""
+
+#: src/qml/Main.qml:232
+msgid "Couldn't export: %1"
+msgstr ""
+
+#: src/qml/Main.qml:232
+msgid "Recording exported"
+msgstr ""
+
+#: src/qml/Main.qml:265
+msgid "Search favorites…"
+msgstr ""
+
+#: src/qml/Main.qml:267 src/qml/Main.qml:291
+msgid "Sort"
+msgstr ""
+
+#: src/qml/Main.qml:273
+msgid "Search recent…"
+msgstr ""
+
+#: src/qml/Main.qml:275
+msgid "Clear History"
+msgstr ""
+
+#: src/qml/Main.qml:281
+msgid "Search recordings…"
+msgstr ""
+
+#: src/qml/Main.qml:283
+msgid "Discard All"
+msgstr ""
+
+#: src/qml/Main.qml:289
+msgid "Search in “%1”…"
+msgstr ""
+
+#: src/qml/Main.qml:289
+msgid "Search stations…"
+msgstr ""
+
+#: src/qml/Main.qml:316 src/qml/Main.qml:464
+msgid "Discover"
+msgstr ""
+
+#: src/qml/Main.qml:316 src/qml/Main.qml:467
+msgid "Favorites"
+msgstr ""
+
+#: src/qml/Main.qml:316 src/qml/Main.qml:470
+msgid "Recent"
+msgstr ""
+
+#: src/qml/Main.qml:381
+msgid "Most Popular"
+msgstr ""
+
+#: src/qml/Main.qml:393
+msgid "Trending"
+msgstr ""
+
+#: src/qml/Main.qml:405
+msgid "Top Voted"
+msgstr ""
+
+#: src/qml/Main.qml:423
+msgid "Order Added"
+msgstr ""
+
+#: src/qml/Main.qml:432
+msgid "Name"
+msgstr ""
+
+#: src/qml/Main.qml:444
+msgid "Menu"
+msgstr ""
+
+#: src/qml/Main.qml:450
+msgid "About Katwhisker"
+msgstr ""
+
+#: src/qml/Main.qml:473
+msgid "Recordings"
+msgstr ""
+
+#: src/qml/Main.qml:483
+msgid "Showing stations tagged “%1”"
+msgstr ""
+
+#: src/qml/Main.qml:487
+msgid "Show All"
+msgstr ""
+
+#: src/qml/Main.qml:503 src/qml/Main.qml:624
+msgid "Retry"
+msgstr ""
+
+#: src/qml/Main.qml:528
+msgid "Stream URL copied"
+msgstr ""
+
+#: src/qml/Main.qml:575
+msgid "Couldn't reach radio-browser.info"
+msgstr ""
+
+#: src/qml/Main.qml:583
+msgid "No matching favorites"
+msgstr ""
+
+#: src/qml/Main.qml:588
+msgid "No favorites yet"
+msgstr ""
+
+#: src/qml/Main.qml:595
+msgid "No matching stations"
+msgstr ""
+
+#: src/qml/Main.qml:600
+msgid "Nothing played yet"
+msgstr ""
+
+#: src/qml/Main.qml:606
+msgid "No recordings yet"
+msgstr ""
+
+#: src/qml/Main.qml:612
+msgid "No stations found"
+msgstr ""
+
+#: src/qml/Main.qml:647
+msgid "Song title copied"
+msgstr ""
+
+#: src/qml/PlayerBar.qml:103 src/qml/PlayerBar.qml:105
+msgid "Recording “%1”"
+msgstr ""
+
+#: src/qml/PlayerBar.qml:120
+msgid "Copy Song Title"
+msgstr ""
+
+#: src/qml/PlayerBar.qml:134
+msgid "Connecting…"
+msgstr ""
+
+#: src/qml/PlayerBar.qml:136
+msgid "Live"
+msgstr ""
+
+#: src/qml/PlayerBar.qml:136
+msgid "Stopped"
+msgstr ""
+
+#: src/qml/PlayerBar.qml:142 src/qml/StationDelegate.qml:43
+#: src/qml/StationDelegate.qml:129
+msgid "Remove from Favorites"
+msgstr ""
+
+#: src/qml/PlayerBar.qml:142 src/qml/StationDelegate.qml:43
+#: src/qml/StationDelegate.qml:129
+msgid "Add to Favorites"
+msgstr ""
+
+#: src/qml/PlayerBar.qml:149
+msgid "Previous Station"
+msgstr ""
+
+#: src/qml/PlayerBar.qml:155
+msgid "Stop"
+msgstr ""
+
+#: src/qml/PlayerBar.qml:155 src/qml/StationDelegate.qml:38
+msgid "Play"
+msgstr ""
+
+#: src/qml/PlayerBar.qml:168
+msgid "Next Station"
+msgstr ""
+
+#: src/qml/PlayerBar.qml:178
+msgid "Unmute"
+msgstr ""
+
+#: src/qml/PlayerBar.qml:178
+msgid "Mute"
+msgstr ""
+
+#: src/qml/PlayerBar.qml:180
+#, javascript-format
+msgid "Volume: %1%"
+msgstr ""
+
+#: src/qml/RecordingDelegate.qml:61
+msgid "Export…"
+msgstr ""
+
+#: src/qml/RecordingDelegate.qml:66
+msgid "Discard"
+msgstr ""
+
+#: src/qml/StationDelegate.qml:49
+msgid "Open Homepage"
+msgstr ""
+
+#: src/qml/StationDelegate.qml:55
+msgid "Copy Stream URL"
+msgstr ""
+
+#: src/qml/StationDelegate.qml:60
+msgid "Vote for Station"
+msgstr ""
+
+#: src/qml/StationDelegate.qml:103
+msgid "%1 kbps"
+msgstr ""
+
+#: src/qml/StationDelegate.qml:105
+msgid "%1 vote"
+msgid_plural "%1 votes"
+msgstr[0] ""
+msgstr[1] ""
