@@ -55,7 +55,7 @@ QQC2.ItemDelegate {
         }
         QQC2.MenuItem {
             text: i18n("Vote for Station")
-            icon.name: "thumbs-up"
+            icon.name: "love"
             onTriggered: delegate.voteRequested()
         }
     }
