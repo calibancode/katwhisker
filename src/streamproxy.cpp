@@ -18,6 +18,7 @@ using namespace Qt::Literals::StringLiterals;
 namespace
 {
 constexpr int HeaderSize = 27;
+constexpr double CushionSeconds = 1.0;
 
 constexpr auto crcTable = [] {
     std::array<quint32, 256> table{};
@@ -106,10 +107,31 @@ QByteArray OggRebaser::process(const QByteArray &data)
     return out;
 }
 
+std::optional<double> OggRebaser::emittedSeconds() const
+{
+    if (m_sampleRate <= 0 || !m_firstOut)
+        return {};
+    return double(m_lastOut - *m_firstOut) / m_sampleRate;
+}
+
 void OggRebaser::emitPage(QByteArray page, QByteArray &out)
 {
     const bool bos = quint8(page[5]) & 0x02;
     const qint64 granule = granuleOf(page);
+
+    if (bos) {
+        // Identification header: learn the sample rate granules count in.
+        const auto body = QByteArrayView(page).sliced(HeaderSize + quint8(page[26]));
+        if (body.startsWith("\x7f" "FLAC") && body.size() >= 30) {
+            // "\x7fFLAC", version, header count, "fLaC", block header, STREAMINFO
+            const auto *si = reinterpret_cast<const quint8 *>(body.data()) + 17;
+            m_sampleRate = (si[10] << 12) | (si[11] << 4) | (si[12] >> 4);
+        } else if (body.startsWith("\x01vorbis") && body.size() >= 16) {
+            m_sampleRate = qFromLittleEndian<quint32>(body.data() + 12);
+        } else if (body.startsWith("OpusHead")) {
+            m_sampleRate = 48000; // Opus granules are always 48 kHz
+        }
+    }
 
     if (bos) {
         // A new logical stream (Icecast chains one per track): rebase it to
@@ -147,6 +169,8 @@ void OggRebaser::emitPage(QByteArray page, QByteArray &out)
     }
 
     m_lastOut = granule - *m_base;
+    if (!m_firstOut)
+        m_firstOut = m_lastOut;
     setGranule(page, m_lastOut);
     out += page;
 }
@@ -309,6 +333,11 @@ void StreamProxy::startSession(QTcpSocket *socket, const QUrl &upstream, int gen
         bool gotMetadata = false;
         OggRebaser ogg;
         std::optional<IcyStripper> icy;
+        // Ogg data is held until it contains CushionSeconds of audio. With a
+        // server burst that's instant; without one (common for FLAC) playback
+        // starts as soon as there's enough to ride out network jitter.
+        bool live = false;
+        QByteArray pending;
     };
     auto session = std::make_shared<Session>();
 
@@ -364,7 +393,21 @@ void StreamProxy::startSession(QTcpSocket *socket, const QUrl &upstream, int gen
         auto data = reply->readAll();
         if (session->icy)
             data = session->icy->process(data);
-        socket->write(session->ogg.process(data));
+        data = session->ogg.process(data);
+        if (session->live) {
+            socket->write(data);
+            return;
+        }
+        session->pending += data;
+        const auto &ogg = session->ogg;
+        const auto seconds = ogg.emittedSeconds();
+        // Non-Ogg, or an Ogg codec we can't time: no cushion, play right away.
+        const bool cushioned = ogg.isDecided()
+            && (!ogg.isOgg() || (seconds ? *seconds >= CushionSeconds : session->pending.size() > 256 * 1024));
+        if (cushioned) {
+            session->live = true;
+            socket->write(std::exchange(session->pending, {}));
+        }
     });
 
     connect(reply, &QNetworkReply::finished, socket, [socket, reply, upstream, session] {

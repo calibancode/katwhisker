@@ -28,6 +28,12 @@ public:
 
     QByteArray process(const QByteArray &data);
 
+    bool isOgg() const { return m_mode == Ogg; }
+    bool isDecided() const { return m_mode != Unknown; }
+    // Seconds of audio emitted so far, from the rewritten granule positions;
+    // nullopt until the sample rate is known.
+    std::optional<double> emittedSeconds() const;
+
 private:
     struct Pending {
         QByteArray page;
@@ -44,6 +50,8 @@ private:
     std::optional<Pending> m_held;
     std::optional<qint64> m_base;
     qint64 m_lastOut = 0;
+    std::optional<qint64> m_firstOut;
+    int m_sampleRate = 0;
 };
 
 // Removes SHOUTcast/Icecast in-band metadata ("icy-metaint") from a stream
