@@ -127,12 +127,12 @@ Kirigami.ApplicationWindow {
             id: list
             model: page.model
             delegate: StationDelegate {
+                id: stationDelegate
                 width: ListView.view.width
-                station: modelData
-                active: root.current !== null && root.current.uuid === modelData.uuid
-                favorite: root.isFavorite(modelData.uuid)
-                onPlayRequested: root.play(modelData)
-                onFavoriteToggled: root.toggleFavorite(modelData)
+                active: root.current !== null && root.current.uuid === station.uuid
+                favorite: root.isFavorite(station.uuid)
+                onPlayRequested: root.play(stationDelegate.station)
+                onFavoriteToggled: root.toggleFavorite(stationDelegate.station)
             }
 
             Kirigami.PlaceholderMessage {

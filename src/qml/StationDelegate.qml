@@ -6,7 +6,8 @@ import org.kde.kirigami as Kirigami
 QQC2.ItemDelegate {
     id: delegate
 
-    required property var station
+    required property var modelData
+    readonly property var station: modelData
     property bool active: false
     property bool favorite: false
 
