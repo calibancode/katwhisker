@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 calibancode
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include "streamproxy.h"
 #include "useragent.h"
 

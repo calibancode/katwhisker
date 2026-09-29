@@ -1,5 +1,5 @@
 <!-- SPDX-FileCopyrightText: 2026 calibancode -->
-<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs><linearGradient id="p" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a4e8c"/><stop offset="1" stop-color="#2b2d58"/></linearGradient></defs>
   <rect x="4" y="4" width="56" height="56" rx="12" fill="url(#p)"/>
