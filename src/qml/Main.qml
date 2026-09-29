@@ -25,6 +25,9 @@ Kirigami.ApplicationWindow {
     minimumWidth: Kirigami.Units.gridUnit * 18
     minimumHeight: Kirigami.Units.gridUnit * 18
 
+    // KAboutData::applicationData(), set from main.cpp.
+    required property var aboutData
+
     // Stations are plain JS objects, see toStation() in radiobrowser.cpp.
     property var current: null
     property var favorites: []
@@ -177,6 +180,13 @@ Kirigami.ApplicationWindow {
         target: RadioBrowser
         function onVoted(uuid, ok, message) {
             root.showPassiveNotification(ok ? i18n("Thanks for voting!") : message);
+        }
+    }
+
+    Component {
+        id: aboutPage
+        Kirigami.AboutPage {
+            aboutData: root.aboutData
         }
     }
 
@@ -392,6 +402,22 @@ Kirigami.ApplicationWindow {
                                     checked: page.favoritesByName
                                     onTriggered: page.favoritesByName = true
                                 }
+                            }
+                        }
+                    }
+
+                    IconToolButton {
+                        id: appMenuButton
+                        icon.name: "application-menu"
+                        text: i18n("Menu")
+                        onClicked: appMenu.popup(appMenuButton, 0, appMenuButton.height)
+
+                        QQC2.Menu {
+                            id: appMenu
+                            QQC2.MenuItem {
+                                text: i18n("About Katwhisker")
+                                icon.name: "help-about"
+                                onTriggered: root.pageStack.pushDialogLayer(aboutPage)
                             }
                         }
                     }

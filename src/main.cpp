@@ -38,6 +38,8 @@ int main(int argc, char *argv[])
     about.setOrganizationDomain("calibancode.github.io");
     about.setHomepage(u"https://github.com/calibancode/katwhisker"_s);
     about.setBugAddress("https://github.com/calibancode/katwhisker/issues");
+    about.addAuthor(u"calibancode"_s);
+    about.addCredit(u"radio-browser.info"_s, i18n("Station directory"), {}, u"https://www.radio-browser.info/"_s);
     about.setDesktopFileName(u"io.github.calibancode.katwhisker"_s);
     KAboutData::setApplicationData(about);
     QApplication::setWindowIcon(QIcon::fromTheme(about.desktopFileName(), QIcon::fromTheme(u"radio"_s)));
@@ -48,6 +50,7 @@ int main(int argc, char *argv[])
 
     QQmlApplicationEngine engine;
     KLocalization::setupLocalizedContext(&engine);
+    engine.setInitialProperties({{u"aboutData"_s, QVariant::fromValue(KAboutData::applicationData())}});
     engine.loadFromModule("io.github.calibancode.katwhisker", "Main");
     if (engine.rootObjects().isEmpty())
         return 1;
