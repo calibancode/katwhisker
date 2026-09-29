@@ -371,19 +371,15 @@ Kirigami.ApplicationWindow {
                 onCurrentIndexChanged: root.view = currentIndex
                 QQC2.TabButton {
                     text: i18n("Discover")
-                    icon.name: "radio"
                 }
                 QQC2.TabButton {
                     text: i18n("Favorites")
-                    icon.name: "starred-symbolic"
                 }
                 QQC2.TabButton {
                     text: i18n("Recent")
-                    icon.name: "document-open-recent"
                 }
                 QQC2.TabButton {
                     text: i18n("Recordings")
-                    icon.name: "media-record"
                 }
             }
 
