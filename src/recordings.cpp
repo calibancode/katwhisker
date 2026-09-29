@@ -7,6 +7,7 @@
 #include <QRegularExpression>
 #include <QStandardPaths>
 #include <QThreadPool>
+#include <QtEndian>
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -31,6 +32,48 @@ qsizetype nextFrameSync(QByteArrayView data)
             return i;
     }
     return -1;
+}
+
+// MPEG-1 Layer III, the usual radio MP3. Returns the frame size in bytes for
+// a header's 2nd and 3rd bytes, or 0 if it isn't one.
+constexpr int SampleRates[] = {44100, 48000, 32000, 0};
+int mp3FrameSize(quint8 b1, quint8 b2)
+{
+    static constexpr int bitrates[] = {0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0};
+    const int bitrate = bitrates[b2 >> 4];
+    const int sampleRate = SampleRates[(b2 >> 2) & 3];
+    if ((b1 & 0xfe) != 0xfa || bitrate == 0 || sampleRate == 0)
+        return 0;
+    return 144 * bitrate * 1000 / sampleRate + ((b2 >> 1) & 1);
+}
+
+// A Xing header frame, as encoders put at the start of an MP3: players read
+// the exact duration and a seek table from it instead of guessing from the
+// first frames' bitrate (which is wrong for VBR). With frames == 0 it's a
+// placeholder of the same size. `offsets` are frame positions after it.
+QByteArray xingFrame(const QByteArray &firstHeader, quint32 frames, const QList<qint64> &offsets, qint64 audioBytes)
+{
+    const int sampleRateIndex = (quint8(firstHeader[2]) >> 2) & 3;
+    const bool mono = (quint8(firstHeader[3]) >> 6) == 3;
+    // A 128 kbit/s frame fits the header at every sample rate.
+    QByteArray frame(144 * 128 * 1000 / SampleRates[sampleRateIndex], '\0');
+    frame[0] = char(0xff);
+    frame[1] = char(0xfb); // MPEG-1 Layer III, no CRC
+    frame[2] = char((9 << 4) | (sampleRateIndex << 2)); // 128 kbit/s, no padding
+    frame[3] = firstHeader[3]; // same channel mode as the audio
+    const qsizetype pos = 4 + (mono ? 17 : 32); // after the (empty) side info
+    frame.replace(pos, 4, "Xing");
+    if (frames == 0)
+        return frame;
+    const quint32 bytes = frame.size() + audioBytes;
+    qToBigEndian<quint32>(0x7, frame.data() + pos + 4); // frames, bytes and seek table present
+    qToBigEndian<quint32>(frames, frame.data() + pos + 8);
+    qToBigEndian<quint32>(bytes, frame.data() + pos + 12);
+    for (int i = 0; i < 100; ++i) {
+        const qint64 offset = frame.size() + offsets.at(qint64(frames) * i / 100);
+        frame[pos + 16 + i] = char(qMin<qint64>(255, offset * 256 / bytes));
+    }
+    return frame;
 }
 
 QString safeFileName(QString name)
@@ -203,15 +246,20 @@ void TrackRecorder::write(const QByteArray &data)
         m_tooLong = true;
         return;
     }
+    QByteArrayView chunk(data);
     if (m_awaitingFrame) {
-        const auto sync = nextFrameSync(data);
+        const auto sync = nextFrameSync(chunk);
         if (sync < 0)
             return;
         m_awaitingFrame = false;
-        m_file->write(data.sliced(sync));
-        return;
+        chunk = chunk.sliced(sync);
+        // Standard MP3: reserve room for a Xing header, filled in by finish().
+        if (m_extension == "mp3"_L1 && chunk.size() >= 4 && mp3FrameSize(chunk[1], chunk[2]) > 0) {
+            m_mp3Header = chunk.first(4).toByteArray();
+            m_file->write(xingFrame(m_mp3Header, 0, {}, 0));
+        }
     }
-    m_file->write(data);
+    m_file->write(chunk.data(), chunk.size());
 }
 
 void TrackRecorder::finish()
@@ -228,9 +276,31 @@ void TrackRecorder::finish()
         return;
     }
 
+    qint64 exactDuration = duration;
+    if (!m_mp3Header.isEmpty() && m_file->open(QIODevice::ReadWrite)) {
+        // Count the frames after our placeholder, then fill it in place.
+        const qsizetype start = xingFrame(m_mp3Header, 0, {}, 0).size();
+        const QByteArray audio = m_file->readAll().sliced(start);
+        QList<qint64> offsets;
+        for (qsizetype i = 0; i + 3 <= audio.size();) {
+            const int size = quint8(audio[i]) == 0xff ? mp3FrameSize(audio[i + 1], audio[i + 2]) : 0;
+            if (size == 0 || i + size > audio.size())
+                break; // not a frame, or the cut-short last one
+            offsets.append(i);
+            i += size;
+        }
+        if (offsets.size() >= 2) {
+            m_file->seek(0);
+            m_file->write(xingFrame(m_mp3Header, offsets.size(), offsets, audio.size()));
+            exactDuration = qint64(offsets.size()) * 1152 * 1000 / SampleRates[(quint8(m_mp3Header[2]) >> 2) & 3];
+        }
+        m_file->close();
+    }
+    m_mp3Header.clear();
+
     const auto title = m_title.isEmpty() ? m_station : m_title;
     const auto base = m_artist.isEmpty() ? title : m_artist + u" – "_s + title;
-    m_model->add({title, m_artist, m_station, m_favicon, duration, m_file->fileName(),
+    m_model->add({title, m_artist, m_station, m_favicon, exactDuration, m_file->fileName(),
                   safeFileName(base) + u'.' + m_extension});
     m_file.reset();
 }

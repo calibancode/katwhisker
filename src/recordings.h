@@ -99,4 +99,6 @@ private:
     QString m_title;
     bool m_tooLong = false;
     bool m_awaitingFrame = false;
+
+    QByteArray m_mp3Header; // first frame header of an MP3 recording; see xingFrame()
 };
