@@ -4,6 +4,8 @@
 
 A small web radio player for KDE Plasma, using the [radio-browser.info](https://www.radio-browser.info/) station directory.
 
+<p align="center"><img src="screenshots/main.webp" width="300" alt="Katwhisker playing a station"></p>
+
 ## Building
 
 Needs Qt 6 (including Multimedia), KDE Frameworks 6 (Kirigami, CoreAddons, I18n), Kirigami Addons and Extra CMake Modules.

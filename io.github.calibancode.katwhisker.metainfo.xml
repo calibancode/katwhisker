@@ -36,6 +36,12 @@
   <requires>
     <internet>always</internet>
   </requires>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Browsing stations while one plays</caption>
+      <image>https://raw.githubusercontent.com/calibancode/katwhisker/v0.1.0/screenshots/main.webp</image>
+    </screenshot>
+  </screenshots>
   <content_rating type="oars-1.1"/>
   <releases>
     <release version="0.1.0" date="2026-09-29"/>
