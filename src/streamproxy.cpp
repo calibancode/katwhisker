@@ -18,7 +18,7 @@ using namespace Qt::Literals::StringLiterals;
 namespace
 {
 constexpr int HeaderSize = 27;
-constexpr double CushionSeconds = 1.0;
+constexpr double CushionSeconds = 2.0;
 
 constexpr auto crcTable = [] {
     std::array<quint32, 256> table{};
@@ -126,6 +126,9 @@ void OggRebaser::emitPage(QByteArray page, QByteArray &out)
             // "\x7fFLAC", version, header count, "fLaC", block header, STREAMINFO
             const auto *si = reinterpret_cast<const quint8 *>(body.data()) + 17;
             m_sampleRate = (si[10] << 12) | (si[11] << 4) | (si[12] >> 4);
+            const int minBlock = (si[0] << 8) | si[1];
+            const int maxBlock = (si[2] << 8) | si[3];
+            m_fixedBlockSize = minBlock == maxBlock ? minBlock : 0;
         } else if (body.startsWith("\x01vorbis") && body.size() >= 16) {
             m_sampleRate = qFromLittleEndian<quint32>(body.data() + 12);
         } else if (body.startsWith("OpusHead")) {
@@ -156,11 +159,29 @@ void OggRebaser::emitPage(QByteArray page, QByteArray &out)
         return;
     }
 
+    // Icecast joins mid-stream, so the first audio page usually starts with
+    // the tail of a packet we never got. Skip pages until one starts cleanly;
+    // otherwise the fragment throws off FFmpeg's first timestamps.
+    if (!m_base && !m_held && (quint8(page[5]) & 0x01))
+        return;
+
+    if (!m_base && !m_held && m_fixedBlockSize > 0) {
+        // Fixed-blocksize FLAC: one packet per frame, so the page's exact
+        // sample count is its packet count (lacing values < 255) × blocksize.
+        const int segments = quint8(page[26]);
+        qint64 packets = 0;
+        for (int i = 0; i < segments; ++i)
+            packets += quint8(page[HeaderSize + i]) < 255;
+        m_base = granule - m_lastOut - packets * m_fixedBlockSize;
+    }
+
     if (!m_base) {
         if (!m_held) {
             m_held = Pending{page, granule, {}};
             return;
         }
+        // Estimate the held page's samples from the next page's; only exact
+        // when pages carry equal sample counts.
         const qint64 perPage = qMax<qint64>(0, granule - m_held->granule);
         m_base = m_held->granule - m_lastOut - perPage;
         setGranule(m_held->page, m_held->granule - *m_base);

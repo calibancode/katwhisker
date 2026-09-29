@@ -52,6 +52,7 @@ private:
     qint64 m_lastOut = 0;
     std::optional<qint64> m_firstOut;
     int m_sampleRate = 0;
+    int m_fixedBlockSize = 0; // FLAC only
 };
 
 // Removes SHOUTcast/Icecast in-band metadata ("icy-metaint") from a stream
