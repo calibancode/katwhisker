@@ -31,6 +31,9 @@ qt_add_qml_module(katwhisker
     SOURCES src/radiobrowser.h src/radiobrowser.cpp src/mpris.h src/mpris.cpp src/streamproxy.h src/streamproxy.cpp src/recordings.h src/recordings.cpp
 )
 
+# Built in as the window icon's fallback, for running without installing.
+qt_add_resources(katwhisker "icon" PREFIX "/" FILES icons/io.github.calibancode.katwhisker.svg)
+
 target_include_directories(katwhisker PRIVATE src ${CMAKE_CURRENT_BINARY_DIR})
 
 target_link_libraries(katwhisker PRIVATE
@@ -41,3 +44,4 @@ target_link_libraries(katwhisker PRIVATE
 install(TARGETS katwhisker ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
 install(FILES io.github.calibancode.katwhisker.desktop DESTINATION ${KDE_INSTALL_APPDIR})
 install(FILES io.github.calibancode.katwhisker.metainfo.xml DESTINATION ${KDE_INSTALL_METAINFODIR})
+install(FILES icons/io.github.calibancode.katwhisker.svg DESTINATION ${KDE_INSTALL_ICONDIR}/hicolor/scalable/apps)

@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
     about.addCredit(u"radio-browser.info"_s, i18n("Station directory"), {}, u"https://www.radio-browser.info/"_s);
     about.setDesktopFileName(u"io.github.calibancode.katwhisker"_s);
     KAboutData::setApplicationData(about);
-    QApplication::setWindowIcon(QIcon::fromTheme(about.desktopFileName(), QIcon::fromTheme(u"radio"_s)));
+    QApplication::setWindowIcon(QIcon::fromTheme(about.desktopFileName(), QIcon(u":/icons/"_s + about.desktopFileName() + u".svg"_s)));
     migrateOldSettings();
 
     if (qEnvironmentVariableIsEmpty("QT_QUICK_CONTROLS_STYLE"))

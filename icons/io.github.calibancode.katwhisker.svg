@@ -1,0 +1,19 @@
+<!-- SPDX-FileCopyrightText: 2026 calibancode -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs><linearGradient id="p" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a4e8c"/><stop offset="1" stop-color="#2b2d58"/></linearGradient></defs>
+  <rect x="4" y="4" width="56" height="56" rx="12" fill="url(#p)"/>
+  <g fill="#f3e6d3" stroke="#f3e6d3" stroke-width="2" stroke-linejoin="round">
+    <path d="M18.5 37 L20 14 L30.5 28 Z"/>
+    <path d="M45.5 37 L44 14 L33.5 28 Z"/>
+    <ellipse cx="32" cy="37" rx="14" ry="12.5"/>
+  </g>
+  <ellipse cx="26.5" cy="36" rx="2.4" ry="3.2" fill="#2b2d58"/>
+  <ellipse cx="37.5" cy="36" rx="2.4" ry="3.2" fill="#2b2d58"/>
+  <g stroke="#f3e6d3" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="miter" fill="none">
+    <polyline points="20,40 15,39 14,36 10,35"/>
+    <polyline points="23,45.5 15.5,45.5 14.5,42.5 10.5,42.5"/>
+    <polyline points="44,40 49,39 50,36 54,35"/>
+    <polyline points="41,45.5 48.5,45.5 49.5,42.5 53.5,42.5"/>
+  </g>
+</svg>

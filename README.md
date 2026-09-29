@@ -1,3 +1,5 @@
+<img src="icons/io.github.calibancode.katwhisker.svg" width="96" alt="">
+
 # Katwhisker
 
 A small web radio player for KDE Plasma, using the [radio-browser.info](https://www.radio-browser.info/) station directory.
