@@ -96,6 +96,7 @@ Kirigami.ApplicationWindow {
         property alias query: page.query
         property alias tag: page.tag
         property alias order: page.order
+        property alias favoritesByName: page.favoritesByName
         property string favoritesJson: "[]"
         property string recentJson: "[]"
         property string queueJson: "[]"
@@ -167,7 +168,10 @@ Kirigami.ApplicationWindow {
         property string tag: ""
         property int order: RadioBrowser.Popular
         readonly property bool discover: root.view === Main.View.Discover
-        readonly property var model: root.view === Main.View.Favorites ? root.favorites
+        property bool favoritesByName: false
+        readonly property var model: root.view === Main.View.Favorites
+                                   ? (favoritesByName ? root.favorites.slice().sort((a, b) => a.name.localeCompare(b.name))
+                                                      : root.favorites)
                                    : root.view === Main.View.Recent ? root.recent
                                    : RadioBrowser.stations
 
@@ -221,9 +225,25 @@ Kirigami.ApplicationWindow {
                 }
             },
             Kirigami.Action {
+                icon.name: "view-sort"
+                text: i18n("Sort")
+                displayHint: Kirigami.DisplayHint.IconOnly
+                visible: root.view === Main.View.Favorites
+                Kirigami.Action {
+                    text: i18n("Order Added"); checkable: true
+                    checked: !page.favoritesByName
+                    onTriggered: page.favoritesByName = false
+                }
+                Kirigami.Action {
+                    text: i18n("Name"); checkable: true
+                    checked: page.favoritesByName
+                    onTriggered: page.favoritesByName = true
+                }
+            },
+            Kirigami.Action {
                 icon.name: "view-refresh"
                 text: i18n("Refresh")
-                displayHint: Kirigami.DisplayHint.AlwaysHide
+                displayHint: Kirigami.DisplayHint.IconOnly
                 visible: page.discover
                 shortcut: StandardKey.Refresh
                 onTriggered: page.reload()
@@ -231,7 +251,7 @@ Kirigami.ApplicationWindow {
             Kirigami.Action {
                 icon.name: "clear-history"
                 text: i18n("Clear History")
-                displayHint: Kirigami.DisplayHint.AlwaysHide
+                displayHint: Kirigami.DisplayHint.IconOnly
                 visible: root.view === Main.View.Recent && root.recent.length > 0
                 onTriggered: root.recent = []
             }
