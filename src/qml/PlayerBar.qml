@@ -16,6 +16,7 @@ QQC2.ToolBar {
     property bool canStep: false
     property string nowPlaying: ""
     property string errorString: ""
+    property string recordingTitle: ""
     property AudioOutput audioOutput
 
     signal toggleRequested()
@@ -79,6 +80,20 @@ QQC2.ToolBar {
                     : bar.nowPlaying ? (bar.station?.name ?? "")
                     : bar.playing ? i18n("Live") : i18n("Stopped")
             }
+        }
+
+        Kirigami.Icon {
+            Layout.preferredWidth: Kirigami.Units.iconSizes.small
+            Layout.preferredHeight: Kirigami.Units.iconSizes.small
+            visible: bar.recordingTitle !== ""
+            source: "media-record"
+            color: Kirigami.Theme.negativeTextColor
+            isMask: true
+
+            HoverHandler { id: recordingHover }
+            QQC2.ToolTip.text: i18n("Recording “%1”", bar.recordingTitle)
+            QQC2.ToolTip.visible: recordingHover.hovered
+            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
         }
 
         IconToolButton {

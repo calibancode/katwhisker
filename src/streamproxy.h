@@ -7,6 +7,8 @@
 #include <QTcpServer>
 #include <QUrl>
 
+#include "recordings.h"
+
 #include <functional>
 #include <optional>
 
@@ -25,8 +27,13 @@ class OggRebaser
 {
 public:
     std::function<void(const QString &artist, const QString &title)> onTags;
+    // A new logical stream (in Icecast, usually a new song) starts at this
+    // offset of the output being produced.
+    std::function<void(qsizetype offset)> onStreamStart;
 
     QByteArray process(const QByteArray &data);
+    // File extension for the codec, once the first stream header was seen.
+    QString extension() const { return m_extension; }
 
     bool isOgg() const { return m_mode == Ogg; }
     bool isDecided() const { return m_mode != Unknown; }
@@ -51,6 +58,7 @@ private:
     std::optional<qint64> m_base;
     qint64 m_lastOut = 0;
     std::optional<qint64> m_firstOut;
+    QString m_extension;
     int m_sampleRate = 0;
     int m_fixedBlockSize = 0; // FLAC only
 };
@@ -66,7 +74,9 @@ public:
     {
     }
 
-    std::function<void(const QString &streamTitle)> onTitle;
+    // Called with each new StreamTitle and where the next song's audio
+    // starts in the output being produced.
+    std::function<void(const QString &streamTitle, qsizetype offset)> onTitle;
 
     QByteArray process(const QByteArray &data);
 
@@ -75,6 +85,7 @@ private:
     int m_untilMeta;
     int m_metaLen = -1; // -1: expecting the length byte
     QByteArray m_meta;
+    QString m_lastTitle;
 };
 
 // Serves radio streams through 127.0.0.1 so they can be fixed up on the fly
@@ -87,29 +98,37 @@ class StreamProxy : public QObject
 
     Q_PROPERTY(QString artist READ artist NOTIFY metadataChanged)
     Q_PROPERTY(QString title READ title NOTIFY metadataChanged)
+    Q_PROPERTY(RecordingsModel *recordings READ recordings CONSTANT)
 
 public:
     explicit StreamProxy(QObject *parent = nullptr);
 
     QString artist() const { return m_artist; }
     QString title() const { return m_title; }
+    RecordingsModel *recordings() { return &m_recordings; }
 
     // Returns a URL the media player should open instead of `url`. HLS
     // playlists are returned unchanged, since their segment URLs are relative.
-    Q_INVOKABLE QUrl wrap(const QUrl &url, bool hls);
+    Q_INVOKABLE QUrl wrap(const QUrl &url, bool hls, const QString &stationName);
 
 Q_SIGNALS:
     void metadataChanged();
 
 private:
     void handleConnection(QTcpSocket *socket);
-    void startSession(QTcpSocket *socket, const QUrl &upstream, int generation);
+    struct Target {
+        QUrl url;
+        int generation = 0;
+        QString station;
+    };
+    void startSession(QTcpSocket *socket, const Target &target);
     void setMetadata(int generation, const QString &artist, const QString &title);
     void pollIcecastStatus(const QUrl &streamUrl, int generation);
 
     QTcpServer m_server;
     QNetworkAccessManager m_nam;
-    QHash<QString, std::pair<QUrl, int>> m_urls;
+    QHash<QString, Target> m_urls;
+    RecordingsModel m_recordings;
     int m_generation = 0;
     QString m_artist;
     QString m_title;

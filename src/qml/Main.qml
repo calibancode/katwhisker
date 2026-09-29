@@ -5,6 +5,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import QtMultimedia
+import QtQuick.Dialogs
 import org.kde.kirigami as Kirigami
 import org.kde.kradio
 
@@ -14,7 +15,8 @@ Kirigami.ApplicationWindow {
     enum View {
         Discover,
         Favorites,
-        Recent
+        Recent,
+        Recordings
     }
 
     title: current ? current.name : i18n("KRadio")
@@ -53,14 +55,14 @@ Kirigami.ApplicationWindow {
             return;
         current = station;
         recent = [station].concat(recent.filter(s => s.uuid !== station.uuid)).slice(0, 50);
-        player.source = StreamProxy.wrap(station.url, station.hls ?? false);
+        player.source = StreamProxy.wrap(station.url, station.hls ?? false, station.name);
         player.play();
         RadioBrowser.countClick(station.uuid);
     }
     function resume() {
         if (!current || playing)
             return;
-        player.source = StreamProxy.wrap(current.url, current.hls ?? false); // reconnect: a stopped live stream is stale
+        player.source = StreamProxy.wrap(current.url, current.hls ?? false, current.name); // reconnect: a stopped live stream is stale
         player.play();
     }
     function togglePlayback() {
@@ -175,6 +177,17 @@ Kirigami.ApplicationWindow {
         }
     }
 
+    FileDialog {
+        id: exportDialog
+        property int row: -1
+        fileMode: FileDialog.SaveFile
+        currentFolder: StandardPaths.writableLocation(StandardPaths.MusicLocation)
+        onAccepted: {
+            const error = StreamProxy.recordings.exportTo(row, selectedFile);
+            root.showPassiveNotification(error ? i18n("Couldn't export: %1", error) : i18n("Recording exported"));
+        }
+    }
+
     // Qt Quick has no clipboard API; a hidden TextEdit is the standard workaround.
     TextEdit {
         id: clipboard
@@ -191,9 +204,12 @@ Kirigami.ApplicationWindow {
         property bool favoritesByName: false
         // Local filter for Favorites and Recent; Discover searches the server.
         property string filter: ""
+        readonly property bool recordingsView: root.view === Main.View.Recordings
         readonly property var model: {
             if (discover)
                 return RadioBrowser.stations;
+            if (recordingsView)
+                return StreamProxy.recordings; // filtered in its delegate
             let list = root.view === Main.View.Favorites ? root.favorites : root.recent;
             if (root.view === Main.View.Favorites && favoritesByName)
                 list = list.slice().sort((a, b) => a.name.localeCompare(b.name));
@@ -226,7 +242,7 @@ Kirigami.ApplicationWindow {
                         id: searchField
                         Layout.fillWidth: true
                         text: page.discover ? page.query : page.filter
-                        placeholderText: root.view === Main.View.Favorites ? i18n("Search favorites…") : root.view === Main.View.Recent ? i18n("Search recent…") : page.tag ? i18n("Search in “%1”…", page.tag) : i18n("Search stations…")
+                        placeholderText: root.view === Main.View.Favorites ? i18n("Search favorites…") : root.view === Main.View.Recent ? i18n("Search recent…") : page.recordingsView ? i18n("Search recordings…") : page.tag ? i18n("Search in “%1”…", page.tag) : i18n("Search stations…")
                         delaySearch: true
                         onAccepted: {
                             if (!page.discover) {
@@ -261,12 +277,14 @@ Kirigami.ApplicationWindow {
                     IconToolButton {
                         id: viewAction
                         readonly property bool recentView: root.view === Main.View.Recent
-                        icon.name: recentView ? "edit-clear-history" : "view-sort"
-                        text: recentView ? i18n("Clear History") : i18n("Sort")
-                        enabled: !recentView || root.recent.length > 0
+                        icon.name: recentView ? "edit-clear-history" : page.recordingsView ? "edit-clear-all" : "view-sort"
+                        text: recentView ? i18n("Clear History") : page.recordingsView ? i18n("Discard All") : i18n("Sort")
+                        enabled: recentView ? root.recent.length > 0 : page.recordingsView ? StreamProxy.recordings.count > 0 : true
                         onClicked: {
                             if (recentView)
                                 root.recent = [];
+                            else if (page.recordingsView)
+                                StreamProxy.recordings.clear();
                             else
                                 (page.discover ? discoverSortMenu : favoritesSortMenu).popup(viewAction, 0, viewAction.height);
                         }
@@ -357,6 +375,10 @@ Kirigami.ApplicationWindow {
                     text: i18n("Recent")
                     icon.name: "document-open-recent"
                 }
+                QQC2.TabButton {
+                    text: i18n("Recordings")
+                    icon.name: "media-record"
+                }
             }
 
             Kirigami.InlineMessage {
@@ -398,7 +420,9 @@ Kirigami.ApplicationWindow {
             reuseItems: true
             currentIndex: -1
 
-            delegate: StationDelegate {
+            Component {
+                id: stationComponent
+            StationDelegate {
                 id: stationDelegate
                 width: ListView.view.width
                 active: root.current !== null && root.current.uuid === stationDelegate.station.uuid
@@ -410,6 +434,26 @@ Kirigami.ApplicationWindow {
                 onVoteRequested: RadioBrowser.vote(stationDelegate.station.uuid)
                 onCopyRequested: root.copyText(stationDelegate.station.url, i18n("Stream URL copied"))
             }
+            }
+
+            Component {
+                id: recordingComponent
+                RecordingDelegate {
+                    id: recordingDelegate
+                    readonly property bool matches: !page.filter || (recordingDelegate.title + " " + recordingDelegate.artist).toLowerCase().includes(page.filter.trim().toLowerCase())
+                    width: ListView.view.width
+                    visible: matches
+                    height: matches ? implicitHeight : 0
+                    onExportRequested: {
+                        exportDialog.row = recordingDelegate.index;
+                        exportDialog.selectedFile = exportDialog.currentFolder + "/" + encodeURIComponent(recordingDelegate.fileName);
+                        exportDialog.open();
+                    }
+                    onDiscardRequested: StreamProxy.recordings.remove(recordingDelegate.index)
+                }
+            }
+
+            delegate: page.recordingsView ? recordingComponent : stationComponent
 
             onAtYEndChanged: if (atYEnd && page.discover && count > 0)
                 RadioBrowser.fetchMore()
@@ -463,6 +507,12 @@ Kirigami.ApplicationWindow {
                             text: i18n("Nothing played yet"),
                             explanation: i18n("Stations you listen to show up here.")
                         };
+                    case Main.View.Recordings:
+                        return {
+                            icon: "media-record",
+                            text: i18n("No recordings yet"),
+                            explanation: i18n("When a station announces a new song, it's recorded as it plays. Recordings are kept until you quit; export the ones you want.")
+                        };
                     default:
                         return {
                             icon: "radio",
@@ -487,6 +537,7 @@ Kirigami.ApplicationWindow {
 
         footer: PlayerBar {
             visible: root.current !== null
+            recordingTitle: StreamProxy.recordings.recordingTitle
             station: root.current
             playing: root.playing
             connecting: root.connecting
