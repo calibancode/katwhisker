@@ -22,6 +22,11 @@ jobs:
 
       - uses: actions/checkout@v4
 
+      # The container runs as another user than the checkout's owner; without
+      # this, git refuses the repo and reuse can't see .gitignore (so it scans build/).
+      - name: Trust the checkout
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       - name: Build
         run: |
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
