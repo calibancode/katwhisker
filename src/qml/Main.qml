@@ -11,7 +11,11 @@ import org.kde.kradio
 Kirigami.ApplicationWindow {
     id: root
 
-    enum View { Discover, Favorites, Recent }
+    enum View {
+        Discover,
+        Favorites,
+        Recent
+    }
 
     title: current ? current.name : i18n("KRadio")
     width: Kirigami.Units.gridUnit * 26
@@ -28,59 +32,54 @@ Kirigami.ApplicationWindow {
     property int view: Main.View.Discover
 
     readonly property bool playing: player.playbackState === MediaPlayer.PlayingState
-    readonly property bool connecting: player.playbackState === MediaPlayer.PlayingState
-        && (player.mediaStatus === MediaPlayer.LoadingMedia || player.mediaStatus === MediaPlayer.StalledMedia)
-    readonly property string nowPlaying: StreamProxy.title
-        ? (StreamProxy.artist ? i18nc("artist – song title", "%1 – %2", StreamProxy.artist, StreamProxy.title) : StreamProxy.title)
-        : player.metaData.stringValue(MediaMetaData.Title).trim()
+    readonly property bool connecting: player.playbackState === MediaPlayer.PlayingState && (player.mediaStatus === MediaPlayer.LoadingMedia || player.mediaStatus === MediaPlayer.StalledMedia)
+    readonly property string nowPlaying: StreamProxy.title ? (StreamProxy.artist ? i18nc("artist – song title", "%1 – %2", StreamProxy.artist, StreamProxy.title) : StreamProxy.title) : player.metaData.stringValue(MediaMetaData.Title).trim()
     readonly property int queueIndex: current ? queue.findIndex(s => s.uuid === current.uuid) : -1
 
     function isFavorite(uuid) {
-        return favorites.some(s => s.uuid === uuid)
+        return favorites.some(s => s.uuid === uuid);
     }
     function toggleFavorite(station) {
-        favorites = isFavorite(station.uuid)
-            ? favorites.filter(s => s.uuid !== station.uuid)
-            : favorites.concat([station])
+        favorites = isFavorite(station.uuid) ? favorites.filter(s => s.uuid !== station.uuid) : favorites.concat([station]);
     }
     function play(station, fromList) {
         if (fromList)
-            queue = fromList
+            queue = fromList;
         if (current && current.uuid === station.uuid && playing)
-            return
-        current = station
-        recent = [station].concat(recent.filter(s => s.uuid !== station.uuid)).slice(0, 50)
-        player.source = StreamProxy.wrap(station.url, station.hls ?? false)
-        player.play()
-        RadioBrowser.countClick(station.uuid)
+            return;
+        current = station;
+        recent = [station].concat(recent.filter(s => s.uuid !== station.uuid)).slice(0, 50);
+        player.source = StreamProxy.wrap(station.url, station.hls ?? false);
+        player.play();
+        RadioBrowser.countClick(station.uuid);
     }
     function resume() {
         if (!current || playing)
-            return
-        player.source = StreamProxy.wrap(current.url, current.hls ?? false) // reconnect: a stopped live stream is stale
-        player.play()
+            return;
+        player.source = StreamProxy.wrap(current.url, current.hls ?? false); // reconnect: a stopped live stream is stale
+        player.play();
     }
     function togglePlayback() {
         // Live streams: stop instead of pausing into an ever-growing buffer.
-        playing ? player.stop() : resume()
+        playing ? player.stop() : resume();
     }
     function step(delta) {
         if (queue.length === 0)
-            return
-        const i = queueIndex < 0 ? 0 : (queueIndex + delta + queue.length) % queue.length
-        play(queue[i])
+            return;
+        const i = queueIndex < 0 ? 0 : (queueIndex + delta + queue.length) % queue.length;
+        play(queue[i]);
     }
     function browseTag(tag) {
-        view = Main.View.Discover
-        page.tag = tag
-        page.query = ""
-        page.reload()
+        view = Main.View.Discover;
+        page.tag = tag;
+        page.query = "";
+        page.reload();
     }
     function copyText(text, message) {
-        clipboard.text = text
-        clipboard.selectAll()
-        clipboard.copy()
-        showPassiveNotification(message)
+        clipboard.text = text;
+        clipboard.selectAll();
+        clipboard.copy();
+        showPassiveNotification(message);
     }
 
     // Everything the user touches is persisted automatically.
@@ -105,17 +104,21 @@ Kirigami.ApplicationWindow {
     }
 
     function parse(json, fallback) {
-        try { return JSON.parse(json) ?? fallback } catch (e) { return fallback }
+        try {
+            return JSON.parse(json) ?? fallback;
+        } catch (e) {
+            return fallback;
+        }
     }
 
     Component.onCompleted: {
-        favorites = parse(settings.favoritesJson, [])
-        recent = parse(settings.recentJson, [])
-        queue = parse(settings.queueJson, [])
-        current = parse(settings.currentJson, null)
+        favorites = parse(settings.favoritesJson, []);
+        recent = parse(settings.recentJson, []);
+        queue = parse(settings.queueJson, []);
+        current = parse(settings.currentJson, null);
         if (settings.wasPlaying)
-            resume()
-        page.reload()
+            resume();
+        page.reload();
     }
     onFavoritesChanged: settings.favoritesJson = JSON.stringify(favorites)
     onRecentChanged: settings.recentJson = JSON.stringify(recent)
@@ -125,7 +128,10 @@ Kirigami.ApplicationWindow {
 
     MediaPlayer {
         id: player
-        audioOutput: AudioOutput { id: audio; volume: 0.8 }
+        audioOutput: AudioOutput {
+            id: audio
+            volume: 0.8
+        }
     }
 
     Mpris {
@@ -140,7 +146,11 @@ Kirigami.ApplicationWindow {
         artUrl: root.current?.favicon ?? ""
         trackId: root.current?.uuid ?? ""
 
-        onRaiseRequested: { root.show(); root.raise(); root.requestActivate() }
+        onRaiseRequested: {
+            root.show();
+            root.raise();
+            root.requestActivate();
+        }
         onQuitRequested: root.close()
         onPlayRequested: root.resume()
         onPauseRequested: player.stop()
@@ -148,18 +158,24 @@ Kirigami.ApplicationWindow {
         onPlayPauseRequested: root.togglePlayback()
         onNextRequested: root.step(1)
         onPreviousRequested: root.step(-1)
-        onVolumeRequested: volume => { audio.volume = volume; audio.muted = false }
+        onVolumeRequested: volume => {
+            audio.volume = volume;
+            audio.muted = false;
+        }
     }
 
     Connections {
         target: RadioBrowser
         function onVoted(uuid, ok, message) {
-            root.showPassiveNotification(ok ? i18n("Thanks for voting!") : message)
+            root.showPassiveNotification(ok ? i18n("Thanks for voting!") : message);
         }
     }
 
     // Qt Quick has no clipboard API; a hidden TextEdit is the standard workaround.
-    TextEdit { id: clipboard; visible: false }
+    TextEdit {
+        id: clipboard
+        visible: false
+    }
 
     pageStack.initialPage: Kirigami.ScrollablePage {
         id: page
@@ -173,112 +189,142 @@ Kirigami.ApplicationWindow {
         property string filter: ""
         readonly property var model: {
             if (discover)
-                return RadioBrowser.stations
-            let list = root.view === Main.View.Favorites ? root.favorites : root.recent
+                return RadioBrowser.stations;
+            let list = root.view === Main.View.Favorites ? root.favorites : root.recent;
             if (root.view === Main.View.Favorites && favoritesByName)
-                list = list.slice().sort((a, b) => a.name.localeCompare(b.name))
-            const needle = filter.trim().toLowerCase()
+                list = list.slice().sort((a, b) => a.name.localeCompare(b.name));
+            const needle = filter.trim().toLowerCase();
             if (needle)
-                list = list.filter(s => s.name.toLowerCase().includes(needle)
-                                        || (Array.isArray(s.tags) && s.tags.some(t => t.toLowerCase().includes(needle))))
-            return list
+                list = list.filter(s => s.name.toLowerCase().includes(needle) || (Array.isArray(s.tags) && s.tags.some(t => t.toLowerCase().includes(needle))));
+            return list;
         }
 
         function reload() {
-            RadioBrowser.search(query, tag, order)
-            list.positionViewAtBeginning()
+            RadioBrowser.search(query, tag, order);
+            list.positionViewAtBeginning();
         }
 
         title: [i18n("Discover"), i18n("Favorites"), i18n("Recent")][root.view]
 
-        titleDelegate: Kirigami.SearchField {
-            id: searchField
-            Layout.fillWidth: true
-            text: page.discover ? page.query : page.filter
-            placeholderText: root.view === Main.View.Favorites ? i18n("Search favorites…")
-                           : root.view === Main.View.Recent ? i18n("Search recent…")
-                           : page.tag ? i18n("Search in “%1”…", page.tag) : i18n("Search stations…")
-            delaySearch: true
-            onAccepted: {
-                if (!page.discover) {
-                    page.filter = text
-                } else if (text !== page.query) {
-                    page.query = text
-                    page.reload()
-                }
-            }
-            // Typing breaks the text binding; restore the tab's own query on switch.
-            Connections {
-                target: root
-                function onViewChanged() {
-                    page.filter = ""
-                    searchField.text = page.discover ? page.query : ""
-                }
-            }
-            Shortcut {
-                sequences: [StandardKey.Find]
-                onActivated: searchField.forceActiveFocus()
-            }
-        }
-
-        actions: [
-            Kirigami.Action {
-                icon.name: "view-sort"
-                text: i18n("Sort")
-                displayHint: Kirigami.DisplayHint.IconOnly
-                visible: page.discover
-                Kirigami.Action {
-                    text: i18n("Most Popular"); checkable: true
-                    checked: page.order === RadioBrowser.Popular
-                    onTriggered: { page.order = RadioBrowser.Popular; page.reload() }
-                }
-                Kirigami.Action {
-                    text: i18n("Trending"); checkable: true
-                    checked: page.order === RadioBrowser.Trending
-                    onTriggered: { page.order = RadioBrowser.Trending; page.reload() }
-                }
-                Kirigami.Action {
-                    text: i18n("Top Voted"); checkable: true
-                    checked: page.order === RadioBrowser.TopVoted
-                    onTriggered: { page.order = RadioBrowser.TopVoted; page.reload() }
-                }
-            },
-            Kirigami.Action {
-                icon.name: "view-sort"
-                text: i18n("Sort")
-                displayHint: Kirigami.DisplayHint.IconOnly
-                visible: root.view === Main.View.Favorites
-                Kirigami.Action {
-                    text: i18n("Order Added"); checkable: true
-                    checked: !page.favoritesByName
-                    onTriggered: page.favoritesByName = false
-                }
-                Kirigami.Action {
-                    text: i18n("Name"); checkable: true
-                    checked: page.favoritesByName
-                    onTriggered: page.favoritesByName = true
-                }
-            },
-            Kirigami.Action {
-                icon.name: "clear-history"
-                text: i18n("Clear History")
-                displayHint: Kirigami.DisplayHint.IconOnly
-                visible: root.view === Main.View.Recent
-                enabled: root.recent.length > 0
-                onTriggered: root.recent = []
-            }
-        ]
+        globalToolBarStyle: Kirigami.ApplicationHeaderStyle.None
 
         header: ColumnLayout {
             spacing: 0
+
+            // Our own toolbar instead of Kirigami's page header: its actions area
+            // always fills width, which leaves uneven space around our button.
+            QQC2.ToolBar {
+                Layout.fillWidth: true
+                contentItem: RowLayout {
+                    spacing: Kirigami.Units.smallSpacing
+
+                    Kirigami.SearchField {
+                        id: searchField
+                        Layout.fillWidth: true
+                        text: page.discover ? page.query : page.filter
+                        placeholderText: root.view === Main.View.Favorites ? i18n("Search favorites…") : root.view === Main.View.Recent ? i18n("Search recent…") : page.tag ? i18n("Search in “%1”…", page.tag) : i18n("Search stations…")
+                        delaySearch: true
+                        onAccepted: {
+                            if (!page.discover) {
+                                page.filter = text;
+                            } else if (text !== page.query) {
+                                page.query = text;
+                                page.reload();
+                            }
+                        }
+                        // Typing breaks the text binding; restore the tab's own query on switch.
+                        Connections {
+                            target: root
+                            function onViewChanged() {
+                                page.filter = "";
+                                searchField.text = page.discover ? page.query : "";
+                            }
+                        }
+                        Shortcut {
+                            sequences: [StandardKey.Find]
+                            onActivated: searchField.forceActiveFocus()
+                        }
+                    }
+
+                    IconToolButton {
+                        id: viewAction
+                        readonly property bool recentView: root.view === Main.View.Recent
+                        icon.name: recentView ? "edit-clear-history" : "view-sort"
+                        text: recentView ? i18n("Clear History") : i18n("Sort")
+                        enabled: !recentView || root.recent.length > 0
+                        onClicked: {
+                            if (recentView)
+                                root.recent = [];
+                            else
+                                (page.discover ? discoverSortMenu : favoritesSortMenu).popup(viewAction, 0, viewAction.height);
+                        }
+
+                        QQC2.Menu {
+                            id: discoverSortMenu
+                            QQC2.ActionGroup {
+                                id: discoverSortGroup
+                            }
+                            Repeater {
+                                model: [[RadioBrowser.Popular, i18n("Most Popular")], [RadioBrowser.Trending, i18n("Trending")], [RadioBrowser.TopVoted, i18n("Top Voted")]]
+                                delegate: QQC2.MenuItem {
+                                    required property var modelData
+                                    text: modelData[1]
+                                    action: QQC2.Action {
+                                        QQC2.ActionGroup.group: discoverSortGroup
+                                        checkable: true
+                                        checked: page.order === modelData[0]
+                                        onTriggered: {
+                                            page.order = modelData[0];
+                                            page.reload();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        QQC2.Menu {
+                            id: favoritesSortMenu
+                            QQC2.ActionGroup {
+                                id: favoritesSortGroup
+                            }
+                            QQC2.MenuItem {
+                                action: QQC2.Action {
+                                    QQC2.ActionGroup.group: favoritesSortGroup
+                                    text: i18n("Order Added")
+                                    checkable: true
+                                    checked: !page.favoritesByName
+                                    onTriggered: page.favoritesByName = false
+                                }
+                            }
+                            QQC2.MenuItem {
+                                action: QQC2.Action {
+                                    QQC2.ActionGroup.group: favoritesSortGroup
+                                    text: i18n("Name")
+                                    checkable: true
+                                    checked: page.favoritesByName
+                                    onTriggered: page.favoritesByName = true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
             QQC2.TabBar {
                 Layout.fillWidth: true
                 currentIndex: root.view
                 onCurrentIndexChanged: root.view = currentIndex
-                QQC2.TabButton { text: i18n("Discover"); icon.name: "radio" }
-                QQC2.TabButton { text: i18n("Favorites"); icon.name: "starred-symbolic" }
-                QQC2.TabButton { text: i18n("Recent"); icon.name: "document-open-recent" }
+                QQC2.TabButton {
+                    text: i18n("Discover")
+                    icon.name: "radio"
+                }
+                QQC2.TabButton {
+                    text: i18n("Favorites")
+                    icon.name: "starred-symbolic"
+                }
+                QQC2.TabButton {
+                    text: i18n("Recent")
+                    icon.name: "document-open-recent"
+                }
             }
 
             Kirigami.InlineMessage {
@@ -289,7 +335,10 @@ Kirigami.ApplicationWindow {
                 icon.name: "tag"
                 text: i18n("Showing stations tagged “%1”", page.tag)
                 showCloseButton: true
-                onVisibleChanged: if (!visible && page.tag !== "" && page.discover) { page.tag = ""; page.reload() }
+                onVisibleChanged: if (!visible && page.tag !== "" && page.discover) {
+                    page.tag = "";
+                    page.reload();
+                }
             }
 
             Kirigami.InlineMessage {
@@ -299,7 +348,8 @@ Kirigami.ApplicationWindow {
                 type: Kirigami.MessageType.Error
                 text: RadioBrowser.error
                 actions: Kirigami.Action {
-                    text: i18n("Retry"); icon.name: "view-refresh"
+                    text: i18n("Retry")
+                    icon.name: "view-refresh"
                     onTriggered: page.reload()
                 }
             }
@@ -324,7 +374,8 @@ Kirigami.ApplicationWindow {
                 onCopyRequested: root.copyText(stationDelegate.station.url, i18n("Stream URL copied"))
             }
 
-            onAtYEndChanged: if (atYEnd && page.discover && count > 0) RadioBrowser.fetchMore()
+            onAtYEndChanged: if (atYEnd && page.discover && count > 0)
+                RadioBrowser.fetchMore()
 
             footer: QQC2.BusyIndicator {
                 width: ListView.view.width
@@ -345,18 +396,42 @@ Kirigami.ApplicationWindow {
                 readonly property bool failed: page.discover && RadioBrowser.error !== ""
                 readonly property var content: {
                     if (failed)
-                        return { icon: "network-disconnect", text: i18n("Couldn't reach radio-browser.info"), explanation: RadioBrowser.error }
+                        return {
+                            icon: "network-disconnect",
+                            text: i18n("Couldn't reach radio-browser.info"),
+                            explanation: RadioBrowser.error
+                        };
                     switch (root.view) {
                     case Main.View.Favorites:
                         if (page.filter)
-                            return { icon: "search", text: i18n("No matching favorites"), explanation: "" }
-                        return { icon: "starred-symbolic", text: i18n("No favorites yet"), explanation: i18n("Star a station to keep it here.") }
+                            return {
+                                icon: "search",
+                                text: i18n("No matching favorites"),
+                                explanation: ""
+                            };
+                        return {
+                            icon: "starred-symbolic",
+                            text: i18n("No favorites yet"),
+                            explanation: i18n("Star a station to keep it here.")
+                        };
                     case Main.View.Recent:
                         if (page.filter)
-                            return { icon: "search", text: i18n("No matching stations"), explanation: "" }
-                        return { icon: "document-open-recent", text: i18n("Nothing played yet"), explanation: i18n("Stations you listen to show up here.") }
+                            return {
+                                icon: "search",
+                                text: i18n("No matching stations"),
+                                explanation: ""
+                            };
+                        return {
+                            icon: "document-open-recent",
+                            text: i18n("Nothing played yet"),
+                            explanation: i18n("Stations you listen to show up here.")
+                        };
                     default:
-                        return { icon: "radio", text: i18n("No stations found"), explanation: i18n("Try a different search.") }
+                        return {
+                            icon: "radio",
+                            text: i18n("No stations found"),
+                            explanation: i18n("Try a different search.")
+                        };
                     }
                 }
                 icon.name: content.icon
@@ -366,7 +441,8 @@ Kirigami.ApplicationWindow {
 
                 Kirigami.Action {
                     id: retryAction
-                    text: i18n("Retry"); icon.name: "view-refresh"
+                    text: i18n("Retry")
+                    icon.name: "view-refresh"
                     onTriggered: page.reload()
                 }
             }
@@ -396,8 +472,22 @@ Kirigami.ApplicationWindow {
         enabled: !(root.activeFocusItem instanceof TextInput)
         onActivated: root.togglePlayback()
     }
-    Shortcut { sequences: [StandardKey.Refresh]; enabled: page.discover; onActivated: page.reload() }
-    Shortcut { sequence: "Ctrl+Right"; onActivated: root.step(1) }
-    Shortcut { sequence: "Ctrl+Left"; onActivated: root.step(-1) }
-    Shortcut { sequence: "M"; enabled: !(root.activeFocusItem instanceof TextInput); onActivated: audio.muted = !audio.muted }
+    Shortcut {
+        sequences: [StandardKey.Refresh]
+        enabled: page.discover
+        onActivated: page.reload()
+    }
+    Shortcut {
+        sequence: "Ctrl+Right"
+        onActivated: root.step(1)
+    }
+    Shortcut {
+        sequence: "Ctrl+Left"
+        onActivated: root.step(-1)
+    }
+    Shortcut {
+        sequence: "M"
+        enabled: !(root.activeFocusItem instanceof TextInput)
+        onActivated: audio.muted = !audio.muted
+    }
 }
