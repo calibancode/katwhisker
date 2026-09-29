@@ -42,15 +42,67 @@ QQC2.ToolBar {
             spacing: 0
 
             QQC2.Label {
+                id: titleLabel
+
+                readonly property bool recording: bar.recordingTitle !== ""
+                readonly property real dotSize: Kirigami.Units.iconSizes.small
+                readonly property real gap: Kirigami.Units.smallSpacing
+                // The dot follows the text until it would run off the edge,
+                // then stays pinned there with the text fading out beneath it.
+                readonly property bool pinned: recording && implicitWidth + gap + dotSize > width
+                readonly property bool rtl: effectiveHorizontalAlignment === Text.AlignRight
+
                 Layout.fillWidth: true
                 text: bar.nowPlaying || (bar.station?.name ?? "")
-                elide: Text.ElideRight
+                // The fade replaces the ellipsis while the dot is pinned.
+                elide: pinned ? Text.ElideNone : Text.ElideRight
+                clip: pinned
                 font.bold: true
                 textFormat: Text.PlainText
 
                 QQC2.ToolTip.text: text
-                QQC2.ToolTip.visible: titleArea.containsMouse && truncated
+                QQC2.ToolTip.visible: titleArea.containsMouse && (truncated || pinned)
                 QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
+
+                Rectangle {
+                    id: fade
+                    // A cheap fade in the bar's own background color, so it
+                    // follows light/dark and custom color schemes.
+                    readonly property color base: Kirigami.Theme.backgroundColor
+                    visible: titleLabel.pinned
+                    width: Kirigami.Units.gridUnit * 2 + titleLabel.dotSize + titleLabel.gap
+                    height: parent.height
+                    x: titleLabel.rtl ? 0 : parent.width - width
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0; color: Qt.alpha(fade.base, titleLabel.rtl ? 1 : 0) }
+                        GradientStop { position: titleLabel.rtl ? 0.35 : 0.65; color: fade.base }
+                        GradientStop { position: 1; color: Qt.alpha(fade.base, titleLabel.rtl ? 0 : 1) }
+                    }
+                }
+
+                Kirigami.Icon {
+                    id: recordingDot
+                    visible: titleLabel.recording
+                    width: titleLabel.dotSize
+                    height: titleLabel.dotSize
+                    anchors.verticalCenter: parent.verticalCenter
+                    x: {
+                        const natural = titleLabel.implicitWidth + titleLabel.gap;
+                        if (titleLabel.rtl)
+                            return titleLabel.pinned ? 0 : titleLabel.width - natural - width;
+                        return titleLabel.pinned ? titleLabel.width - width : natural;
+                    }
+                    source: "media-record"
+                    color: Kirigami.Theme.negativeTextColor
+                    isMask: true
+
+                    Accessible.name: i18n("Recording “%1”", bar.recordingTitle)
+                    HoverHandler { id: recordingHover }
+                    QQC2.ToolTip.text: i18n("Recording “%1”", bar.recordingTitle)
+                    QQC2.ToolTip.visible: recordingHover.hovered
+                    QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
+                }
 
                 MouseArea {
                     id: titleArea
@@ -80,20 +132,6 @@ QQC2.ToolBar {
                     : bar.nowPlaying ? (bar.station?.name ?? "")
                     : bar.playing ? i18n("Live") : i18n("Stopped")
             }
-        }
-
-        Kirigami.Icon {
-            Layout.preferredWidth: Kirigami.Units.iconSizes.small
-            Layout.preferredHeight: Kirigami.Units.iconSizes.small
-            visible: bar.recordingTitle !== ""
-            source: "media-record"
-            color: Kirigami.Theme.negativeTextColor
-            isMask: true
-
-            HoverHandler { id: recordingHover }
-            QQC2.ToolTip.text: i18n("Recording “%1”", bar.recordingTitle)
-            QQC2.ToolTip.visible: recordingHover.hovered
-            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
         }
 
         IconToolButton {
