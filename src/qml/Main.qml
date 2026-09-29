@@ -7,7 +7,7 @@ import QtQuick.Layouts
 import QtMultimedia
 import QtQuick.Dialogs
 import org.kde.kirigami as Kirigami
-import org.kde.kradio
+import io.github.calibancode.katwhisker
 
 Kirigami.ApplicationWindow {
     id: root
@@ -19,7 +19,7 @@ Kirigami.ApplicationWindow {
         Recordings
     }
 
-    title: current ? current.name : i18n("KRadio")
+    title: current ? current.name : i18n("Katwhisker")
     width: Kirigami.Units.gridUnit * 26
     height: Kirigami.Units.gridUnit * 36
     minimumWidth: Kirigami.Units.gridUnit * 18

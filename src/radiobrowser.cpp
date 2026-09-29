@@ -1,4 +1,5 @@
 #include "radiobrowser.h"
+#include "useragent.h"
 
 #include <QDnsLookup>
 #include <QJsonArray>
@@ -70,7 +71,7 @@ QNetworkRequest RadioBrowser::request(const QString &path, const QUrlQuery &quer
     url.setPath(path);
     url.setQuery(query);
     QNetworkRequest req(url);
-    req.setHeader(QNetworkRequest::UserAgentHeader, u"KRadio/0.1"_s);
+    req.setHeader(QNetworkRequest::UserAgentHeader, userAgent());
     return req;
 }
 

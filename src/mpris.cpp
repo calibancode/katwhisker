@@ -15,7 +15,7 @@ constexpr auto ObjectPath = "/org/mpris/MediaPlayer2"_L1;
 
 Mpris::Mpris(QObject *parent)
     : QObject(parent)
-    , m_serviceName(u"org.mpris.MediaPlayer2.kradio.instance%1"_s.arg(QCoreApplication::applicationPid()))
+    , m_serviceName(u"org.mpris.MediaPlayer2.katwhisker.instance%1"_s.arg(QCoreApplication::applicationPid()))
 {
     new MprisRootAdaptor(this);
     new MprisPlayerAdaptor(this);
@@ -53,7 +53,7 @@ QVariantMap Mpris::metadata() const
     QString id = m_trackId;
     id.replace(u'-', u'_');
     QVariantMap map{
-        {u"mpris:trackid"_s, QVariant::fromValue(QDBusObjectPath(u"/org/kde/kradio/station/"_s + id))},
+        {u"mpris:trackid"_s, QVariant::fromValue(QDBusObjectPath(u"/io/github/calibancode/katwhisker/station/"_s + id))},
         {u"xesam:title"_s, m_title.isEmpty() ? m_stationName : m_title},
         {u"xesam:album"_s, m_stationName},
     };

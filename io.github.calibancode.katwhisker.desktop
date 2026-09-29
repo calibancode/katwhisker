@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Application
-Name=KRadio
+Name=Katwhisker
 GenericName=Web Radio
 Comment=Listen to internet radio stations from radio-browser.info
-Exec=kradio
-Icon=radio
+Exec=katwhisker
+Icon=io.github.calibancode.katwhisker
 Categories=Qt;KDE;AudioVideo;Audio;Player;

@@ -1,4 +1,5 @@
 #include "streamproxy.h"
+#include "useragent.h"
 
 #include <QHash>
 #include <QJsonArray>
@@ -362,7 +363,7 @@ void StreamProxy::startSession(QTcpSocket *socket, const Target &target)
     const auto &upstream = target.url;
     const int generation = target.generation;
     QNetworkRequest req(upstream);
-    req.setHeader(QNetworkRequest::UserAgentHeader, u"KRadio/0.1"_s);
+    req.setHeader(QNetworkRequest::UserAgentHeader, userAgent());
     req.setRawHeader("Icy-MetaData", "1");
     req.setTransferTimeout(0); // live streams never finish
     auto *reply = m_nam.get(req);
@@ -520,7 +521,7 @@ void StreamProxy::pollIcecastStatus(const QUrl &streamUrl, int generation)
     statusUrl.setQuery(QString());
 
     QNetworkRequest req(statusUrl);
-    req.setHeader(QNetworkRequest::UserAgentHeader, u"KRadio/0.1"_s);
+    req.setHeader(QNetworkRequest::UserAgentHeader, userAgent());
     req.setTransferTimeout(10000);
     auto *reply = m_nam.get(req);
     connect(reply, &QNetworkReply::finished, this, [this, reply, mount, generation] {

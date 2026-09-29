@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: 2026 calibancode -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+<component type="desktop-application">
+  <id>io.github.calibancode.katwhisker</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>Katwhisker</name>
+  <summary>Listen to internet radio</summary>
+  <developer id="io.github.calibancode">
+    <name>calibancode</name>
+  </developer>
+  <description>
+    <p>
+      A small web radio player for Plasma, with stations from the radio-browser.info directory.
+    </p>
+    <ul>
+      <li>Search stations, browse by tag, and keep favorites</li>
+      <li>Shows the current song where the station provides it</li>
+      <li>Records songs as they play, bit-for-bit, to export the ones you like</li>
+      <li>Works with media keys and Plasma's media controls</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">io.github.calibancode.katwhisker.desktop</launchable>
+  <url type="homepage">https://github.com/calibancode/katwhisker</url>
+  <url type="bugtracker">https://github.com/calibancode/katwhisker/issues</url>
+  <url type="vcs-browser">https://github.com/calibancode/katwhisker</url>
+  <categories>
+    <category>AudioVideo</category>
+    <category>Audio</category>
+    <category>Player</category>
+  </categories>
+  <provides>
+    <binary>katwhisker</binary>
+  </provides>
+  <requires>
+    <internet>always</internet>
+  </requires>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.1.0" date="2026-09-29"/>
+  </releases>
+</component>
