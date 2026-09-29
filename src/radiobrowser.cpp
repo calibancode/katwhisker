@@ -31,6 +31,7 @@ QVariantMap toStation(const QJsonObject &o)
         {u"codec"_s, o["codec"_L1].toString()},
         {u"bitrate"_s, o["bitrate"_L1].toInt()},
         {u"votes"_s, o["votes"_L1].toInt()},
+        {u"hls"_s, o["hls"_L1].toInt() == 1},
     };
 }
 }

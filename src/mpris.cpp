@@ -58,7 +58,7 @@ QVariantMap Mpris::metadata() const
         {u"xesam:album"_s, m_stationName},
     };
     if (!m_title.isEmpty())
-        map[u"xesam:artist"_s] = QStringList{m_stationName};
+        map[u"xesam:artist"_s] = QStringList{m_artist.isEmpty() ? m_stationName : m_artist};
     if (!m_artUrl.isEmpty())
         map[u"mpris:artUrl"_s] = m_artUrl;
     return map;

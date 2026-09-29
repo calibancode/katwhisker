@@ -30,7 +30,9 @@ Kirigami.ApplicationWindow {
     readonly property bool playing: player.playbackState === MediaPlayer.PlayingState
     readonly property bool connecting: player.playbackState === MediaPlayer.PlayingState
         && (player.mediaStatus === MediaPlayer.LoadingMedia || player.mediaStatus === MediaPlayer.StalledMedia)
-    readonly property string nowPlaying: player.metaData.stringValue(MediaMetaData.Title).trim()
+    readonly property string nowPlaying: StreamProxy.title
+        ? (StreamProxy.artist ? i18nc("artist – song title", "%1 – %2", StreamProxy.artist, StreamProxy.title) : StreamProxy.title)
+        : player.metaData.stringValue(MediaMetaData.Title).trim()
     readonly property int queueIndex: current ? queue.findIndex(s => s.uuid === current.uuid) : -1
 
     function isFavorite(uuid) {
@@ -48,14 +50,14 @@ Kirigami.ApplicationWindow {
             return
         current = station
         recent = [station].concat(recent.filter(s => s.uuid !== station.uuid)).slice(0, 50)
-        player.source = StreamProxy.wrap(station.url, station.codec ?? "")
+        player.source = StreamProxy.wrap(station.url, station.hls ?? false)
         player.play()
         RadioBrowser.countClick(station.uuid)
     }
     function resume() {
         if (!current || playing)
             return
-        player.source = StreamProxy.wrap(current.url, current.codec ?? "") // reconnect: a stopped live stream is stale
+        player.source = StreamProxy.wrap(current.url, current.hls ?? false) // reconnect: a stopped live stream is stale
         player.play()
     }
     function togglePlayback() {
@@ -132,7 +134,8 @@ Kirigami.ApplicationWindow {
         canGoPrevious: root.queue.length > 1
         volume: audio.muted ? 0 : audio.volume
         stationName: root.current?.name ?? ""
-        title: root.nowPlaying
+        title: StreamProxy.title || root.nowPlaying
+        artist: StreamProxy.artist
         artUrl: root.current?.favicon ?? ""
         trackId: root.current?.uuid ?? ""
 

@@ -1,6 +1,10 @@
 #include "streamproxy.h"
 
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QNetworkReply>
+#include <QTimer>
 #include <QRandomGenerator>
 #include <QTcpSocket>
 #include <QtEndian>
@@ -37,6 +41,23 @@ quint32 oggCrc(const QByteArray &page)
 qint64 granuleOf(const QByteArray &page)
 {
     return qFromLittleEndian<qint64>(page.constData() + 6);
+}
+
+// "Artist - Title" is the de facto StreamTitle convention.
+std::pair<QString, QString> splitStreamTitle(const QString &streamTitle)
+{
+    const auto i = streamTitle.indexOf(u" - "_s);
+    if (i < 0)
+        return {{}, streamTitle.trimmed()};
+    return {streamTitle.first(i).trimmed(), streamTitle.sliced(i + 3).trimmed()};
+}
+
+QString decodeText(const QByteArray &bytes)
+{
+    // Mostly UTF-8, but older SHOUTcast servers send Latin-1.
+    auto decoder = QStringDecoder(QStringDecoder::Utf8, QStringDecoder::Flag::Stateless);
+    QString text = decoder(bytes);
+    return decoder.hasError() ? QString::fromLatin1(bytes) : text;
 }
 
 void setGranule(QByteArray &page, qint64 granule)
@@ -104,6 +125,8 @@ void OggRebaser::emitPage(QByteArray page, QByteArray &out)
     // Header pages carry granule 0 and pages without a finished packet -1;
     // neither needs rewriting.
     if (granule <= 0) {
+        if (granule == 0 && !bos)
+            parseTags(page);
         if (m_held)
             m_held->following += page;
         else
@@ -128,30 +151,128 @@ void OggRebaser::emitPage(QByteArray page, QByteArray &out)
     out += page;
 }
 
+void OggRebaser::parseTags(QByteArrayView page)
+{
+    if (!onTags)
+        return;
+    const int segments = quint8(page[26]);
+    auto body = page.sliced(HeaderSize + segments);
+
+    // The comment header of each Ogg mapping, then a Vorbis comment block.
+    if (body.startsWith("\x03vorbis"))
+        body = body.sliced(7);
+    else if (body.startsWith("OpusTags"))
+        body = body.sliced(8);
+    else if (!body.isEmpty() && (quint8(body[0]) & 0x7f) == 4) // FLAC VORBIS_COMMENT block
+        body = body.sliced(4);
+    else
+        return;
+
+    qsizetype pos = 0;
+    auto readU32 = [&]() -> std::optional<quint32> {
+        if (body.size() - pos < 4)
+            return {};
+        const auto v = qFromLittleEndian<quint32>(body.data() + pos);
+        pos += 4;
+        return v;
+    };
+    const auto vendorLen = readU32();
+    if (!vendorLen || body.size() - pos < *vendorLen)
+        return;
+    pos += *vendorLen;
+    const auto count = readU32();
+    if (!count)
+        return;
+
+    QString artist, title;
+    for (quint32 i = 0; i < *count; ++i) {
+        const auto len = readU32();
+        if (!len || body.size() - pos < *len)
+            break;
+        const auto comment = QString::fromUtf8(body.sliced(pos, *len));
+        pos += *len;
+        const auto eq = comment.indexOf(u'=');
+        const auto key = comment.first(qMax(0, eq)).toUpper();
+        if (key == "ARTIST"_L1)
+            artist = comment.sliced(eq + 1);
+        else if (key == "TITLE"_L1)
+            title = comment.sliced(eq + 1);
+    }
+    if (!title.isEmpty() || !artist.isEmpty())
+        onTags(artist, title);
+}
+
+QByteArray IcyStripper::process(const QByteArray &data)
+{
+    QByteArray out;
+    out.reserve(data.size());
+    qsizetype pos = 0;
+    while (pos < data.size()) {
+        if (m_untilMeta > 0) {
+            const auto n = qMin<qsizetype>(m_untilMeta, data.size() - pos);
+            out += data.sliced(pos, n);
+            pos += n;
+            m_untilMeta -= n;
+        } else if (m_metaLen < 0) {
+            m_metaLen = quint8(data[pos++]) * 16;
+            m_meta.clear();
+        } else {
+            const auto n = qMin<qsizetype>(m_metaLen - m_meta.size(), data.size() - pos);
+            m_meta += data.sliced(pos, n);
+            pos += n;
+        }
+
+        if (m_untilMeta == 0 && m_metaLen >= 0 && m_meta.size() == m_metaLen) {
+            // e.g. "StreamTitle='Artist - Title';StreamUrl='';" padded with NULs
+            static constexpr QByteArrayView key = "StreamTitle='";
+            if (const auto start = m_meta.indexOf(key); start >= 0 && onTitle) {
+                const auto from = start + key.size();
+                auto end = m_meta.indexOf("';", from);
+                if (end < 0)
+                    end = m_meta.lastIndexOf('\'');
+                if (end >= from)
+                    onTitle(decodeText(m_meta.sliced(from, end - from)));
+            }
+            m_metaLen = -1;
+            m_untilMeta = m_metaInt;
+        }
+    }
+    return out;
+}
+
 StreamProxy::StreamProxy(QObject *parent)
     : QObject(parent)
 {
-    m_nam.setTransferTimeout(15000);
+    m_nam.setRedirectPolicy(QNetworkRequest::UserVerifiedRedirectPolicy);
     connect(&m_server, &QTcpServer::newConnection, this, [this] {
         while (auto *socket = m_server.nextPendingConnection())
             handleConnection(socket);
     });
 }
 
-QUrl StreamProxy::wrap(const QUrl &url, const QString &codec)
+QUrl StreamProxy::wrap(const QUrl &url, bool hls)
 {
-    static const QStringList oggCodecs{u"FLAC"_s, u"OGG"_s, u"OPUS"_s, u"VORBIS"_s};
-    const bool ogg = std::ranges::any_of(oggCodecs, [&](const auto &c) {
-        return codec.contains(c, Qt::CaseInsensitive);
-    });
-    if (!ogg || !url.isValid())
+    // A new station: forget the previous song, and let old sessions go stale.
+    ++m_generation;
+    setMetadata(m_generation, {}, {});
+
+    if (hls || !url.isValid() || !url.scheme().startsWith(u"http"_s))
         return url;
     if (!m_server.isListening() && !m_server.listen(QHostAddress::LocalHost))
         return url;
 
     const auto id = QString::number(QRandomGenerator::global()->generate64(), 36);
-    m_urls.insert(id, url);
+    m_urls.insert(id, {url, m_generation});
     return QUrl(u"http://127.0.0.1:%1/%2"_s.arg(m_server.serverPort()).arg(id));
+}
+
+void StreamProxy::setMetadata(int generation, const QString &artist, const QString &title)
+{
+    if (generation != m_generation || (artist == m_artist && title == m_title))
+        return;
+    m_artist = artist;
+    m_title = title;
+    Q_EMIT metadataChanged();
 }
 
 void StreamProxy::handleConnection(QTcpSocket *socket)
@@ -165,37 +286,145 @@ void StreamProxy::handleConnection(QTcpSocket *socket)
         // "GET /<id> HTTP/1.1"
         const auto parts = socket->readLine().split(' ');
         const auto id = parts.size() >= 2 ? QString::fromLatin1(parts[1].mid(1)) : QString();
-        const auto upstream = m_urls.value(id);
+        const auto [upstream, generation] = m_urls.value(id);
         if (upstream.isEmpty()) {
             socket->write("HTTP/1.0 404 Not Found\r\n\r\n");
             socket->disconnectFromHost();
             return;
         }
+        startSession(socket, upstream, generation);
+    });
+}
 
-        QNetworkRequest req(upstream);
-        req.setHeader(QNetworkRequest::UserAgentHeader, u"KRadio/0.1"_s);
-        req.setTransferTimeout(0); // live streams never finish
-        auto *reply = m_nam.get(req);
-        auto rebaser = std::make_shared<OggRebaser>();
+void StreamProxy::startSession(QTcpSocket *socket, const QUrl &upstream, int generation)
+{
+    QNetworkRequest req(upstream);
+    req.setHeader(QNetworkRequest::UserAgentHeader, u"KRadio/0.1"_s);
+    req.setRawHeader("Icy-MetaData", "1");
+    req.setTransferTimeout(0); // live streams never finish
+    auto *reply = m_nam.get(req);
 
-        connect(socket, &QTcpSocket::disconnected, reply, [reply] {
-            reply->abort();
-            reply->deleteLater();
-        });
-        connect(reply, &QNetworkReply::metaDataChanged, socket, [socket, reply, headerSent = false]() mutable {
-            // Skip redirect hops; answer once for the final response.
-            if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() / 100 == 3 || headerSent)
+    struct Session {
+        bool headerSent = false;
+        bool gotMetadata = false;
+        OggRebaser ogg;
+        std::optional<IcyStripper> icy;
+    };
+    auto session = std::make_shared<Session>();
+
+    auto report = [this, generation, session](const QString &artist, const QString &title) {
+        session->gotMetadata = true;
+        setMetadata(generation, artist, title);
+    };
+    session->ogg.onTags = report;
+
+    connect(reply, &QNetworkReply::redirected, reply, &QNetworkReply::redirectAllowed);
+    connect(socket, &QTcpSocket::disconnected, reply, [reply] {
+        reply->abort();
+        reply->deleteLater();
+    });
+
+    connect(reply, &QNetworkReply::metaDataChanged, socket, [=, this] {
+        const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        if (status / 100 == 3 || session->headerSent)
+            return;
+        session->headerSent = true;
+
+        if (const int metaInt = reply->rawHeader("icy-metaint").toInt(); metaInt > 0) {
+            session->icy.emplace(metaInt);
+            session->icy->onTitle = [report](const QString &streamTitle) {
+                const auto [artist, title] = splitStreamTitle(streamTitle);
+                report(artist, title);
+            };
+        }
+
+        const auto type = reply->header(QNetworkRequest::ContentTypeHeader).toByteArray();
+        socket->write("HTTP/1.0 200 OK\r\nContent-Type: " + (type.isEmpty() ? "application/octet-stream" : type)
+                      + "\r\nCache-Control: no-cache\r\n\r\n");
+
+        // Some Icecast mounts (often FLAC) carry no metadata at all; the
+        // server's status page may still know what's playing.
+        const bool icecast = reply->hasRawHeader("icy-name") || reply->rawHeader("Server").contains("Icecast");
+        if (icecast) {
+            auto *timer = new QTimer(socket);
+            timer->setInterval(20000);
+            auto poll = [this, session, streamUrl = reply->url(), generation] {
+                if (!session->gotMetadata)
+                    pollIcecastStatus(streamUrl, generation);
+            };
+            connect(timer, &QTimer::timeout, this, poll);
+            QTimer::singleShot(4000, timer, [timer, poll] {
+                poll();
+                timer->start();
+            });
+        }
+    });
+
+    connect(reply, &QNetworkReply::readyRead, socket, [socket, reply, session] {
+        auto data = reply->readAll();
+        if (session->icy)
+            data = session->icy->process(data);
+        socket->write(session->ogg.process(data));
+    });
+
+    connect(reply, &QNetworkReply::finished, socket, [socket, reply, upstream, session] {
+        if (!session->headerSent) {
+            // We couldn't talk to it (e.g. a SHOUTcast v1 "ICY 200 OK"
+            // reply): hand the player the original URL instead.
+            socket->write("HTTP/1.0 302 Found\r\nLocation: " + upstream.toEncoded() + "\r\n\r\n");
+        }
+        socket->disconnectFromHost();
+    });
+}
+
+void StreamProxy::pollIcecastStatus(const QUrl &streamUrl, int generation)
+{
+    if (generation != m_generation)
+        return;
+
+    QUrl statusUrl = streamUrl;
+    const auto path = streamUrl.path();
+    const auto mount = path.sliced(path.lastIndexOf(u'/') + 1);
+    statusUrl.setPath(path.first(path.lastIndexOf(u'/') + 1) + u"status-json.xsl"_s);
+    statusUrl.setQuery(QString());
+
+    QNetworkRequest req(statusUrl);
+    req.setHeader(QNetworkRequest::UserAgentHeader, u"KRadio/0.1"_s);
+    req.setTransferTimeout(10000);
+    auto *reply = m_nam.get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply, mount, generation] {
+        reply->deleteLater();
+        const auto icestats = QJsonDocument::fromJson(reply->readAll())["icestats"_L1]["source"_L1];
+        const auto sources = icestats.isArray() ? icestats.toArray() : QJsonArray{icestats};
+
+        // Prefer our own mount; otherwise the title most sibling mounts agree on.
+        QHash<std::pair<QString, QString>, int> votes;
+        for (const auto &v : sources) {
+            const auto s = v.toObject();
+            const std::pair<QString, QString> song{s["artist"_L1].toString(), s["title"_L1].toString()};
+            if (song.second.isEmpty())
+                continue;
+            if (QUrl(s["listenurl"_L1].toString()).path().endsWith(u'/' + mount)) {
+                setMetadata(generation, song.first, song.second);
                 return;
-            headerSent = true;
-            const auto type = reply->header(QNetworkRequest::ContentTypeHeader).toByteArray();
-            socket->write("HTTP/1.0 200 OK\r\nContent-Type: " + (type.isEmpty() ? "application/ogg" : type)
-                          + "\r\nCache-Control: no-cache\r\n\r\n");
-        });
-        connect(reply, &QNetworkReply::readyRead, socket, [socket, reply, rebaser] {
-            socket->write(rebaser->process(reply->readAll()));
-        });
-        connect(reply, &QNetworkReply::finished, socket, [socket] {
-            socket->disconnectFromHost();
-        });
+            }
+            ++votes[song];
+        }
+        if (votes.isEmpty())
+            return;
+        std::pair<QString, QString> best;
+        int bestVotes = 0;
+        for (const auto &[song, n] : votes.asKeyValueRange()) {
+            if (n > bestVotes)
+                best = song, bestVotes = n;
+        }
+        const auto &[artist, title] = best;
+        // Icecast puts the whole "Artist - Title" in title when there's no artist.
+        if (artist.isEmpty()) {
+            const auto [a, t] = splitStreamTitle(title);
+            setMetadata(generation, a, t);
+        } else {
+            setMetadata(generation, artist, title);
+        }
     });
 }

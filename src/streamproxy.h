@@ -7,9 +7,14 @@
 #include <QTcpServer>
 #include <QUrl>
 
+#include <functional>
 #include <optional>
 
-// Rewrites Ogg granule positions so they start near zero.
+class QNetworkReply;
+class QTcpSocket;
+
+// Rewrites Ogg granule positions so they start near zero, and reports the
+// artist/title from Vorbis comment headers.
 //
 // Icecast relays Ogg streams (FLAC, Vorbis, Opus) with the granule positions
 // of a stream that may have been running for days. FFmpeg then stamps the
@@ -19,6 +24,8 @@
 class OggRebaser
 {
 public:
+    std::function<void(const QString &artist, const QString &title)> onTags;
+
     QByteArray process(const QByteArray &data);
 
 private:
@@ -28,6 +35,7 @@ private:
         QByteArray following; // pages that arrived while holding, in order
     };
     void emitPage(QByteArray page, QByteArray &out);
+    void parseTags(QByteArrayView page);
 
     QByteArray m_in;
     enum { Unknown, Ogg, Passthrough } m_mode = Unknown;
@@ -38,24 +46,62 @@ private:
     qint64 m_lastOut = 0;
 };
 
-// Serves radio streams through 127.0.0.1 so they can be fixed up on the fly.
+// Removes SHOUTcast/Icecast in-band metadata ("icy-metaint") from a stream
+// and reports each StreamTitle.
+class IcyStripper
+{
+public:
+    explicit IcyStripper(int metaInt)
+        : m_metaInt(metaInt)
+        , m_untilMeta(metaInt)
+    {
+    }
+
+    std::function<void(const QString &streamTitle)> onTitle;
+
+    QByteArray process(const QByteArray &data);
+
+private:
+    int m_metaInt;
+    int m_untilMeta;
+    int m_metaLen = -1; // -1: expecting the length byte
+    QByteArray m_meta;
+};
+
+// Serves radio streams through 127.0.0.1 so they can be fixed up on the fly
+// and so we can read the song metadata that Qt Multimedia doesn't expose.
 class StreamProxy : public QObject
 {
     Q_OBJECT
     QML_ELEMENT
     QML_SINGLETON
 
+    Q_PROPERTY(QString artist READ artist NOTIFY metadataChanged)
+    Q_PROPERTY(QString title READ title NOTIFY metadataChanged)
+
 public:
     explicit StreamProxy(QObject *parent = nullptr);
 
-    // Returns a URL the media player should open instead of `url`. Only Ogg
-    // based codecs are proxied; everything else is returned unchanged.
-    Q_INVOKABLE QUrl wrap(const QUrl &url, const QString &codec);
+    QString artist() const { return m_artist; }
+    QString title() const { return m_title; }
+
+    // Returns a URL the media player should open instead of `url`. HLS
+    // playlists are returned unchanged, since their segment URLs are relative.
+    Q_INVOKABLE QUrl wrap(const QUrl &url, bool hls);
+
+Q_SIGNALS:
+    void metadataChanged();
 
 private:
     void handleConnection(QTcpSocket *socket);
+    void startSession(QTcpSocket *socket, const QUrl &upstream, int generation);
+    void setMetadata(int generation, const QString &artist, const QString &title);
+    void pollIcecastStatus(const QUrl &streamUrl, int generation);
 
     QTcpServer m_server;
     QNetworkAccessManager m_nam;
-    QHash<QString, QUrl> m_urls;
+    QHash<QString, std::pair<QUrl, int>> m_urls;
+    int m_generation = 0;
+    QString m_artist;
+    QString m_title;
 };

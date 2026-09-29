@@ -21,6 +21,7 @@ class Mpris : public QObject
     Q_PROPERTY(double volume MEMBER m_volume NOTIFY stateChanged)
     Q_PROPERTY(QString stationName MEMBER m_stationName NOTIFY stateChanged)
     Q_PROPERTY(QString title MEMBER m_title NOTIFY stateChanged)
+    Q_PROPERTY(QString artist MEMBER m_artist NOTIFY stateChanged)
     Q_PROPERTY(QString artUrl MEMBER m_artUrl NOTIFY stateChanged)
     Q_PROPERTY(QString trackId MEMBER m_trackId NOTIFY stateChanged)
 
@@ -54,6 +55,7 @@ private:
     double m_volume = 1.0;
     QString m_stationName;
     QString m_title;
+    QString m_artist;
     QString m_artUrl;
     QString m_trackId;
     QString m_serviceName;
