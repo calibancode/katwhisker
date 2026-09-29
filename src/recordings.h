@@ -48,8 +48,9 @@ public:
 
     Q_INVOKABLE void remove(int row);
     Q_INVOKABLE void clear();
-    // Copies the recording to `destination`; returns an error message or "".
-    Q_INVOKABLE QString exportTo(int row, const QUrl &destination) const;
+    // Copies the recording to `destination` in the background; exported()
+    // reports the result.
+    Q_INVOKABLE void exportTo(int row, const QUrl &destination);
 
     // Used by the recorder.
     QString newTempPath(const QString &extension);
@@ -59,6 +60,7 @@ public:
 Q_SIGNALS:
     void countChanged();
     void recordingTitleChanged();
+    void exported(const QString &error); // empty on success
 
 private:
     QDir m_dir;

@@ -6,6 +6,7 @@
 #include <KLocalizedString>
 #include <QRegularExpression>
 #include <QStandardPaths>
+#include <QThreadPool>
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -51,6 +52,8 @@ RecordingsModel::RecordingsModel(QObject *parent)
 
 RecordingsModel::~RecordingsModel()
 {
+    // Let a running export finish before its source file is deleted.
+    QThreadPool::globalInstance()->waitForDone();
     m_dir.removeRecursively();
 }
 
@@ -107,16 +110,21 @@ void RecordingsModel::clear()
     Q_EMIT countChanged();
 }
 
-QString RecordingsModel::exportTo(int row, const QUrl &destination) const
+void RecordingsModel::exportTo(int row, const QUrl &destination)
 {
-    if (row < 0 || row >= m_entries.size())
-        return i18n("No such recording");
-    const auto target = destination.toLocalFile();
-    QFile::remove(target); // the file dialog already confirmed overwriting
-    QFile source(m_entries.at(row).path);
-    if (!source.copy(target))
-        return source.errorString();
-    return {};
+    if (row < 0 || row >= m_entries.size()) {
+        Q_EMIT exported(i18n("No such recording"));
+        return;
+    }
+    // Off the UI thread: a big file or a slow destination (USB stick,
+    // network share) would otherwise freeze the window while copying.
+    QThreadPool::globalInstance()->start([this, source = m_entries.at(row).path, target = destination.toLocalFile()] {
+        QFile::remove(target); // the file dialog already confirmed overwriting
+        QFile file(source);
+        const auto error = file.copy(target) ? QString() : file.errorString();
+        // Safe: the destructor waits for this task before `this` goes away.
+        QMetaObject::invokeMethod(this, [this, error] { Q_EMIT exported(error); }, Qt::QueuedConnection);
+    });
 }
 
 QString RecordingsModel::newTempPath(const QString &extension)

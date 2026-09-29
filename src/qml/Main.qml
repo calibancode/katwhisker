@@ -213,8 +213,12 @@ Kirigami.ApplicationWindow {
         property int row: -1
         fileMode: FileDialog.SaveFile
         currentFolder: StandardPaths.writableLocation(StandardPaths.MusicLocation)
-        onAccepted: {
-            const error = StreamProxy.recordings.exportTo(row, selectedFile);
+        onAccepted: StreamProxy.recordings.exportTo(row, selectedFile)
+    }
+
+    Connections {
+        target: StreamProxy.recordings
+        function onExported(error) {
             root.showPassiveNotification(error ? i18n("Couldn't export: %1", error) : i18n("Recording exported"));
         }
     }
