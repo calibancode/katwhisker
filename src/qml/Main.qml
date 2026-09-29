@@ -7,6 +7,7 @@ import QtQuick.Layouts
 import QtMultimedia
 import QtQuick.Dialogs
 import org.kde.kirigami as Kirigami
+import org.kde.kirigamiaddons.formcard as FormCard
 import io.github.calibancode.katwhisker
 
 Kirigami.ApplicationWindow {
@@ -185,7 +186,7 @@ Kirigami.ApplicationWindow {
 
     Component {
         id: aboutPage
-        Kirigami.AboutPage {
+        FormCard.AboutPage {
             aboutData: root.aboutData
         }
     }
@@ -417,7 +418,11 @@ Kirigami.ApplicationWindow {
                             QQC2.MenuItem {
                                 text: i18n("About Katwhisker")
                                 icon.name: "help-about"
-                                onTriggered: root.pageStack.pushDialogLayer(aboutPage)
+                                onTriggered: root.pageStack.pushDialogLayer(aboutPage, {}, {
+                                    // Big enough to show the whole page without resizing.
+                                    width: Kirigami.Units.gridUnit * 32,
+                                    height: Math.min(Kirigami.Units.gridUnit * 44, root.screen.desktopAvailableHeight * 0.9)
+                                })
                             }
                         }
                     }

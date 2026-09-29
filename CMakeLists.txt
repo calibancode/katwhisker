@@ -18,6 +18,7 @@ ecm_setup_version(${PROJECT_VERSION} VARIABLE_PREFIX KATWHISKER VERSION_HEADER $
 find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Network Multimedia Widgets DBus)
 find_package(KF6 REQUIRED COMPONENTS CoreAddons I18n)
 find_package(KF6Kirigami REQUIRED)
+find_package(KF6KirigamiAddons REQUIRED) # FormCard.AboutPage
 
 qt_policy(SET QTP0001 NEW)
 qt_policy(SET QTP0004 NEW)

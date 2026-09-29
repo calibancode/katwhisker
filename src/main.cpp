@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
     about.setOrganizationDomain("calibancode.github.io");
     about.setHomepage(u"https://github.com/calibancode/katwhisker"_s);
     about.setBugAddress("https://github.com/calibancode/katwhisker/issues");
-    about.addAuthor(u"calibancode"_s);
+    about.addAuthor(u"calibancode"_s, i18n("Developer"));
     about.addCredit(u"radio-browser.info"_s, i18n("Station directory"), {}, u"https://www.radio-browser.info/"_s);
     about.setDesktopFileName(u"io.github.calibancode.katwhisker"_s);
     KAboutData::setApplicationData(about);

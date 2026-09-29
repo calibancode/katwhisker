@@ -4,7 +4,7 @@ A small web radio player for KDE Plasma, using the [radio-browser.info](https://
 
 ## Building
 
-Needs Qt 6 (including Multimedia), KDE Frameworks 6 (Kirigami, CoreAddons, I18n) and Extra CMake Modules.
+Needs Qt 6 (including Multimedia), KDE Frameworks 6 (Kirigami, CoreAddons, I18n), Kirigami Addons and Extra CMake Modules.
 
 ```sh
 cmake -B build
