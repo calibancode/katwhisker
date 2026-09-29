@@ -528,7 +528,7 @@ Kirigami.ApplicationWindow {
                         return {
                             icon: "starred-symbolic",
                             text: i18n("No favorites yet"),
-                            explanation: i18n("Star a station to keep it here.")
+                            explanation: ""
                         };
                     case Main.View.Recent:
                         if (page.filter)
@@ -540,7 +540,7 @@ Kirigami.ApplicationWindow {
                         return {
                             icon: "document-open-recent",
                             text: i18n("Nothing played yet"),
-                            explanation: i18n("Stations you listen to show up here.")
+                            explanation: ""
                         };
                     case Main.View.Recordings:
                         return {
@@ -552,7 +552,7 @@ Kirigami.ApplicationWindow {
                         return {
                             icon: "radio",
                             text: i18n("No stations found"),
-                            explanation: i18n("Try a different search.")
+                            explanation: ""
                         };
                     }
                 }
