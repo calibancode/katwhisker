@@ -197,6 +197,12 @@ Kirigami.ApplicationWindow {
     pageStack.initialPage: Kirigami.ScrollablePage {
         id: page
 
+        // Kirigami forwards keys to the list's current item through plain
+        // pointers; when rows are rebuilt (new search, tab switch) that item
+        // can be deleted first and the next key press crashes. The list still
+        // handles arrow keys itself once focused.
+        keyboardNavigationEnabled: false
+
         property string query: ""
         property string tag: ""
         property int order: RadioBrowser.Popular

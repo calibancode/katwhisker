@@ -44,13 +44,19 @@ qint64 granuleOf(const QByteArray &page)
     return qFromLittleEndian<qint64>(page.constData() + 6);
 }
 
-// "Artist - Title" is the de facto StreamTitle convention.
+// "Artist - Title" is the de facto StreamTitle convention. Some stations
+// use "Title by Artist - Station", so check for that first.
 std::pair<QString, QString> splitStreamTitle(const QString &streamTitle)
 {
-    const auto i = streamTitle.indexOf(u" - "_s);
-    if (i < 0)
+    const auto dash = streamTitle.indexOf(u" - "_s);
+    const auto by = streamTitle.indexOf(u" by "_s);
+    if (by > 0 && (dash < 0 || by < dash)) {
+        const auto artistEnd = dash < 0 ? streamTitle.size() : dash;
+        return {streamTitle.sliced(by + 4, artistEnd - by - 4).trimmed(), streamTitle.first(by).trimmed()};
+    }
+    if (dash < 0)
         return {{}, streamTitle.trimmed()};
-    return {streamTitle.first(i).trimmed(), streamTitle.sliced(i + 3).trimmed()};
+    return {streamTitle.first(dash).trimmed(), streamTitle.sliced(dash + 3).trimmed()};
 }
 
 QString decodeText(const QByteArray &bytes)
@@ -520,18 +526,35 @@ void StreamProxy::pollIcecastStatus(const QUrl &streamUrl, int generation)
         const auto icestats = QJsonDocument::fromJson(reply->readAll())["icestats"_L1]["source"_L1];
         const auto sources = icestats.isArray() ? icestats.toArray() : QJsonArray{icestats};
 
-        // Prefer our own mount; otherwise the title most sibling mounts agree on.
+        // Prefer our own mount. Otherwise use the mounts whose names share
+        // the longest prefix with ours: "classic_opus" matches "classic", not
+        // the same server's "jazz", which is a different station.
+        auto commonPrefix = [&mount](const QString &other) {
+            qsizetype n = 0;
+            while (n < mount.size() && n < other.size() && mount[n] == other[n])
+                ++n;
+            return n;
+        };
         QHash<std::pair<QString, QString>, int> votes;
+        qsizetype bestPrefix = 1; // share at least one character
         for (const auto &v : sources) {
             const auto s = v.toObject();
             const std::pair<QString, QString> song{s["artist"_L1].toString(), s["title"_L1].toString()};
             if (song.second.isEmpty())
                 continue;
-            if (QUrl(s["listenurl"_L1].toString()).path().endsWith(u'/' + mount)) {
+            const auto path = QUrl(s["listenurl"_L1].toString()).path();
+            const auto other = path.sliced(path.lastIndexOf(u'/') + 1);
+            if (other == mount) {
                 setMetadata(generation, song.first, song.second);
                 return;
             }
-            ++votes[song];
+            const auto prefix = commonPrefix(other);
+            if (prefix > bestPrefix) {
+                bestPrefix = prefix;
+                votes.clear();
+            }
+            if (prefix == bestPrefix)
+                ++votes[song];
         }
         if (votes.isEmpty())
             return;
