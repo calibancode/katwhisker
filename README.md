@@ -6,6 +6,16 @@ A small web radio player for KDE Plasma, using the [radio-browser.info](https://
 
 <p align="center"><img src="screenshots/main.webp" width="300" alt="Katwhisker playing a station"></p>
 
+## Installing
+
+On Arch Linux, from the [AUR](https://aur.archlinux.org/packages/katwhisker), with your AUR helper or by hand:
+
+```sh
+git clone https://aur.archlinux.org/katwhisker.git
+cd katwhisker
+makepkg -si
+```
+
 ## Building
 
 Needs Qt 6 (including Multimedia), KDE Frameworks 6 (Kirigami, CoreAddons, I18n), Kirigami Addons and Extra CMake Modules.
