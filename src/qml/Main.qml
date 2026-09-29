@@ -48,14 +48,14 @@ Kirigami.ApplicationWindow {
             return
         current = station
         recent = [station].concat(recent.filter(s => s.uuid !== station.uuid)).slice(0, 50)
-        player.source = station.url
+        player.source = StreamProxy.wrap(station.url, station.codec ?? "")
         player.play()
         RadioBrowser.countClick(station.uuid)
     }
     function resume() {
         if (!current || playing)
             return
-        player.source = current.url // reconnect: a stopped live stream is stale
+        player.source = StreamProxy.wrap(current.url, current.codec ?? "") // reconnect: a stopped live stream is stale
         player.play()
     }
     function togglePlayback() {
