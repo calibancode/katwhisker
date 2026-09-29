@@ -119,36 +119,26 @@ QQC2.ToolBar {
             icon.name: level === 0 ? "audio-volume-muted"
                      : level < 0.34 ? "audio-volume-low"
                      : level < 0.67 ? "audio-volume-medium" : "audio-volume-high"
-            text: i18n("Volume")
-            onClicked: volumePopup.opened ? volumePopup.close() : volumePopup.open()
-            QQC2.ToolTip.text: i18n("Volume: %1% (middle-click to mute)", Math.round(level * 100))
-            QQC2.ToolTip.visible: hovered && !volumePopup.opened
+            text: level === 0 ? i18n("Unmute") : i18n("Mute")
+            onClicked: bar.audioOutput.muted = !bar.audioOutput.muted
+            QQC2.ToolTip.text: i18n("Volume: %1%", Math.round(level * 100))
 
-            // Scroll to change volume and middle-click to mute, like Plasma's applets.
+            // Scroll to change volume, like Plasma's applets.
             WheelHandler {
                 onWheel: event => {
                     bar.audioOutput.muted = false
                     bar.audioOutput.volume = Math.max(0, Math.min(1, bar.audioOutput.volume + event.angleDelta.y / 120 * 0.05))
                 }
             }
-            TapHandler {
-                acceptedButtons: Qt.MiddleButton
-                onTapped: bar.audioOutput.muted = !bar.audioOutput.muted
-            }
+        }
 
-            QQC2.Popup {
-                id: volumePopup
-                y: -height - Kirigami.Units.smallSpacing
-                x: (parent.width - width) / 2
-                padding: Kirigami.Units.smallSpacing
-                contentItem: QQC2.Slider {
-                    orientation: Qt.Vertical
-                    implicitHeight: Kirigami.Units.gridUnit * 7
-                    from: 0; to: 1
-                    value: volumeButton.level
-                    onMoved: { bar.audioOutput.volume = value; bar.audioOutput.muted = false }
-                }
-            }
+        QQC2.Slider {
+            Layout.preferredWidth: Kirigami.Units.gridUnit * 5
+            // Hide on narrow windows; the button still mutes and scrolls.
+            visible: bar.width > Kirigami.Units.gridUnit * 22
+            from: 0; to: 1
+            value: volumeButton.level
+            onMoved: { bar.audioOutput.volume = value; bar.audioOutput.muted = false }
         }
     }
 }
