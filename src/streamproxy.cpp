@@ -300,6 +300,7 @@ QUrl StreamProxy::wrap(const QUrl &url, bool hls)
     // A new station: forget the previous song, and let old sessions go stale.
     ++m_generation;
     setMetadata(m_generation, {}, {});
+    m_urls.clear(); // players reconnect through the latest URL only
 
     if (hls || !url.isValid() || !url.scheme().startsWith(u"http"_s))
         return url;
@@ -376,7 +377,10 @@ void StreamProxy::startSession(QTcpSocket *socket, const QUrl &upstream, int gen
 
     connect(reply, &QNetworkReply::metaDataChanged, socket, [=, this] {
         const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-        if (status / 100 == 3 || session->headerSent)
+        // Skip redirect hops; answer once for the final response. Errors are
+        // left unanswered so the finished handler hands the player the
+        // original URL, which then reports the error itself.
+        if (status / 100 == 3 || status >= 400 || session->headerSent)
             return;
         session->headerSent = true;
 
@@ -412,6 +416,8 @@ void StreamProxy::startSession(QTcpSocket *socket, const QUrl &upstream, int gen
 
     connect(reply, &QNetworkReply::readyRead, socket, [socket, reply, session] {
         auto data = reply->readAll();
+        if (!session->headerSent)
+            return; // an error page or redirect body, not audio
         if (session->icy)
             data = session->icy->process(data);
         data = session->ogg.process(data);
@@ -433,8 +439,8 @@ void StreamProxy::startSession(QTcpSocket *socket, const QUrl &upstream, int gen
 
     connect(reply, &QNetworkReply::finished, socket, [socket, reply, upstream, session] {
         if (!session->headerSent) {
-            // We couldn't talk to it (e.g. a SHOUTcast v1 "ICY 200 OK"
-            // reply): hand the player the original URL instead.
+            // We couldn't talk to it (an HTTP error, or e.g. a SHOUTcast v1
+            // "ICY 200 OK" reply): hand the player the original URL instead.
             socket->write("HTTP/1.0 302 Found\r\nLocation: " + upstream.toEncoded() + "\r\n\r\n");
         }
         socket->disconnectFromHost();

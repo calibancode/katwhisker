@@ -51,6 +51,8 @@ private:
 
     QNetworkAccessManager m_nam;
     QUrl m_server;
+    QList<QUrl> m_mirrors;
+    int m_failovers = 0;
     QString m_name;
     QString m_tag;
     Order m_order = Popular;

@@ -51,12 +51,11 @@ void RadioBrowser::resolveServer()
     connect(dns, &QDnsLookup::finished, this, [this, dns] {
         dns->deleteLater();
         const auto records = dns->serviceRecords();
-        if (dns->error() == QDnsLookup::NoError && !records.isEmpty()) {
-            const auto &rec = records.at(QRandomGenerator::global()->bounded(records.size()));
-            m_server = QUrl(u"https://"_s + rec.target());
-        } else {
-            m_server = QUrl(FallbackServer);
-        }
+        for (const auto &rec : records)
+            m_mirrors.append(QUrl(u"https://"_s + rec.target()));
+        if (dns->error() != QDnsLookup::NoError || m_mirrors.isEmpty())
+            m_mirrors = {QUrl(FallbackServer)};
+        m_server = m_mirrors.at(QRandomGenerator::global()->bounded(m_mirrors.size()));
         if (m_hasPending) {
             m_hasPending = false;
             load(false);
@@ -79,7 +78,8 @@ void RadioBrowser::search(const QString &name, const QString &tag, Order order)
 {
     m_name = name.trimmed();
     m_tag = tag.trimmed();
-    m_order = order;
+    // QML passes a plain int restored from settings; don't trust its range.
+    m_order = order >= Popular && order <= TopVoted ? order : Popular;
     if (m_server.isEmpty()) {
         m_hasPending = true;
         return;
@@ -124,9 +124,19 @@ void RadioBrowser::load(bool append)
         Q_EMIT busyChanged();
 
         if (reply->error() != QNetworkReply::NoError) {
+            // Mirrors do go down; try the next one before giving up. (Replies
+            // we abort ourselves are disconnected first and never get here.)
+            if (m_failovers < m_mirrors.size() - 1) {
+                ++m_failovers;
+                m_server = m_mirrors.at((m_mirrors.indexOf(m_server) + 1) % m_mirrors.size());
+                load(append);
+                return;
+            }
+            m_failovers = 0;
             setError(reply->errorString());
             return;
         }
+        m_failovers = 0;
         setError({});
 
         const auto array = QJsonDocument::fromJson(reply->readAll()).array();

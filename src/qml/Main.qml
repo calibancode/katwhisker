@@ -43,8 +43,12 @@ Kirigami.ApplicationWindow {
         favorites = isFavorite(station.uuid) ? favorites.filter(s => s.uuid !== station.uuid) : favorites.concat([station]);
     }
     function play(station, fromList) {
-        if (fromList)
-            queue = fromList;
+        if (fromList) {
+            // Discover lists grow as you scroll; keep a window around the
+            // station so the persisted queue stays small.
+            const i = Math.max(0, fromList.findIndex(s => s.uuid === station.uuid));
+            queue = fromList.slice(Math.max(0, i - 100), i + 100);
+        }
         if (current && current.uuid === station.uuid && playing)
             return;
         current = station;
@@ -240,6 +244,14 @@ Kirigami.ApplicationWindow {
                                 searchField.text = page.discover ? page.query : "";
                             }
                         }
+                        // browseTag() and friends change the query behind our back.
+                        Connections {
+                            target: page
+                            function onQueryChanged() {
+                                if (page.discover)
+                                    searchField.text = page.query;
+                            }
+                        }
                         Shortcut {
                             sequences: [StandardKey.Find]
                             onActivated: searchField.forceActiveFocus()
@@ -264,19 +276,39 @@ Kirigami.ApplicationWindow {
                             QQC2.ActionGroup {
                                 id: discoverSortGroup
                             }
-                            Repeater {
-                                model: [[RadioBrowser.Popular, i18n("Most Popular")], [RadioBrowser.Trending, i18n("Trending")], [RadioBrowser.TopVoted, i18n("Top Voted")]]
-                                delegate: QQC2.MenuItem {
-                                    required property var modelData
-                                    text: modelData[1]
-                                    action: QQC2.Action {
-                                        QQC2.ActionGroup.group: discoverSortGroup
-                                        checkable: true
-                                        checked: page.order === modelData[0]
-                                        onTriggered: {
-                                            page.order = modelData[0];
-                                            page.reload();
-                                        }
+                            QQC2.MenuItem {
+                                action: QQC2.Action {
+                                    QQC2.ActionGroup.group: discoverSortGroup
+                                    text: i18n("Most Popular")
+                                    checkable: true
+                                    checked: page.order === RadioBrowser.Popular
+                                    onTriggered: {
+                                        page.order = RadioBrowser.Popular;
+                                        page.reload();
+                                    }
+                                }
+                            }
+                            QQC2.MenuItem {
+                                action: QQC2.Action {
+                                    QQC2.ActionGroup.group: discoverSortGroup
+                                    text: i18n("Trending")
+                                    checkable: true
+                                    checked: page.order === RadioBrowser.Trending
+                                    onTriggered: {
+                                        page.order = RadioBrowser.Trending;
+                                        page.reload();
+                                    }
+                                }
+                            }
+                            QQC2.MenuItem {
+                                action: QQC2.Action {
+                                    QQC2.ActionGroup.group: discoverSortGroup
+                                    text: i18n("Top Voted")
+                                    checkable: true
+                                    checked: page.order === RadioBrowser.TopVoted
+                                    onTriggered: {
+                                        page.order = RadioBrowser.TopVoted;
+                                        page.reload();
                                     }
                                 }
                             }
@@ -334,10 +366,15 @@ Kirigami.ApplicationWindow {
                 type: Kirigami.MessageType.Information
                 icon.name: "tag"
                 text: i18n("Showing stations tagged “%1”", page.tag)
-                showCloseButton: true
-                onVisibleChanged: if (!visible && page.tag !== "" && page.discover) {
-                    page.tag = "";
-                    page.reload();
+                // An action rather than the close button: closing assigns
+                // visible = false, which would break the binding above for good.
+                actions: Kirigami.Action {
+                    text: i18n("Show All")
+                    icon.name: "edit-clear"
+                    onTriggered: {
+                        page.tag = "";
+                        page.reload();
+                    }
                 }
             }
 
