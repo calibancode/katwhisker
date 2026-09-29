@@ -55,15 +55,18 @@ Kirigami.ApplicationWindow {
             return;
         current = station;
         recent = [station].concat(recent.filter(s => s.uuid !== station.uuid)).slice(0, 50);
-        player.source = StreamProxy.wrap(station.url, station.hls ?? false, station.name, station.favicon ?? "");
+        player.source = streamSource(station);
         player.play();
         RadioBrowser.countClick(station.uuid);
     }
     function resume() {
         if (!current || playing)
             return;
-        player.source = StreamProxy.wrap(current.url, current.hls ?? false, current.name, current.favicon ?? ""); // reconnect: a stopped live stream is stale
+        player.source = streamSource(current); // reconnect: a stopped live stream is stale
         player.play();
+    }
+    function streamSource(station) {
+        return StreamProxy.wrap(station.url, station.hls ?? false, station.name, station.favicon ?? "");
     }
     function togglePlayback() {
         // Live streams: stop instead of pausing into an ever-growing buffer.
@@ -211,6 +214,44 @@ Kirigami.ApplicationWindow {
         // Local filter for Favorites and Recent; Discover searches the server.
         property string filter: ""
         readonly property bool recordingsView: root.view === Main.View.Recordings
+        // Everything that differs per tab in the toolbar, in one place.
+        readonly property var viewConfig: {
+            const popupSort = menu => () => menu.popup(viewAction, 0, viewAction.height);
+            switch (root.view) {
+            case Main.View.Favorites:
+                return {
+                    placeholder: i18n("Search favorites…"),
+                    actionIcon: "view-sort",
+                    actionText: i18n("Sort"),
+                    actionEnabled: true,
+                    action: popupSort(favoritesSortMenu)
+                };
+            case Main.View.Recent:
+                return {
+                    placeholder: i18n("Search recent…"),
+                    actionIcon: "edit-clear-history",
+                    actionText: i18n("Clear History"),
+                    actionEnabled: root.recent.length > 0,
+                    action: () => root.recent = []
+                };
+            case Main.View.Recordings:
+                return {
+                    placeholder: i18n("Search recordings…"),
+                    actionIcon: "edit-clear-all",
+                    actionText: i18n("Discard All"),
+                    actionEnabled: StreamProxy.recordings.count > 0,
+                    action: () => StreamProxy.recordings.clear()
+                };
+            default:
+                return {
+                    placeholder: tag ? i18n("Search in “%1”…", tag) : i18n("Search stations…"),
+                    actionIcon: "view-sort",
+                    actionText: i18n("Sort"),
+                    actionEnabled: true,
+                    action: popupSort(discoverSortMenu)
+                };
+            }
+        }
         readonly property var model: {
             if (discover)
                 return RadioBrowser.stations;
@@ -248,7 +289,7 @@ Kirigami.ApplicationWindow {
                         id: searchField
                         Layout.fillWidth: true
                         text: page.discover ? page.query : page.filter
-                        placeholderText: root.view === Main.View.Favorites ? i18n("Search favorites…") : root.view === Main.View.Recent ? i18n("Search recent…") : page.recordingsView ? i18n("Search recordings…") : page.tag ? i18n("Search in “%1”…", page.tag) : i18n("Search stations…")
+                        placeholderText: page.viewConfig.placeholder
                         delaySearch: true
                         onAccepted: {
                             if (!page.discover) {
@@ -282,18 +323,10 @@ Kirigami.ApplicationWindow {
 
                     IconToolButton {
                         id: viewAction
-                        readonly property bool recentView: root.view === Main.View.Recent
-                        icon.name: recentView ? "edit-clear-history" : page.recordingsView ? "edit-clear-all" : "view-sort"
-                        text: recentView ? i18n("Clear History") : page.recordingsView ? i18n("Discard All") : i18n("Sort")
-                        enabled: recentView ? root.recent.length > 0 : page.recordingsView ? StreamProxy.recordings.count > 0 : true
-                        onClicked: {
-                            if (recentView)
-                                root.recent = [];
-                            else if (page.recordingsView)
-                                StreamProxy.recordings.clear();
-                            else
-                                (page.discover ? discoverSortMenu : favoritesSortMenu).popup(viewAction, 0, viewAction.height);
-                        }
+                        icon.name: page.viewConfig.actionIcon
+                        text: page.viewConfig.actionText
+                        enabled: page.viewConfig.actionEnabled
+                        onClicked: page.viewConfig.action()
 
                         QQC2.Menu {
                             id: discoverSortMenu

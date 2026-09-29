@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
+import org.kde.coreaddons as KCoreAddons
 
 QQC2.ItemDelegate {
     id: delegate
@@ -21,11 +22,6 @@ QQC2.ItemDelegate {
 
     // Exporting is the one thing to do with a recording, so a click does it.
     onClicked: exportRequested()
-
-    function formatDuration(ms) {
-        const s = Math.round(ms / 1000);
-        return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-    }
 
     contentItem: RowLayout {
         spacing: Kirigami.Units.largeSpacing
@@ -52,7 +48,7 @@ QQC2.ItemDelegate {
                 opacity: 0.7
                 font: Kirigami.Theme.smallFont
                 textFormat: Text.PlainText
-                text: [delegate.artist, delegate.station, delegate.formatDuration(delegate.duration)]
+                text: [delegate.artist, delegate.station, KCoreAddons.Format.formatDuration(delegate.duration, KCoreAddons.FormatTypes.FoldHours)]
                       .filter(s => s).join("  ·  ")
             }
         }

@@ -69,7 +69,9 @@ private:
 class TrackRecorder
 {
 public:
-    TrackRecorder(RecordingsModel *model, QString station, QString favicon, QString extension);
+    // `frameAligned`: cuts may land mid-frame (ICY streams), so each song
+    // should start at the next MP3/AAC frame header.
+    TrackRecorder(RecordingsModel *model, QString station, QString favicon, QString extension, bool frameAligned);
     ~TrackRecorder();
 
     // A new song starts at the next write(). Title/artist may come later.
@@ -84,6 +86,7 @@ private:
     QString m_station;
     QString m_favicon;
     QString m_extension;
+    bool m_frameAligned;
     int m_boundaries = 0;
     std::unique_ptr<QFile> m_file;
     QElapsedTimer m_elapsed;

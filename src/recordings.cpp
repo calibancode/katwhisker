@@ -1,5 +1,6 @@
 #include "recordings.h"
 
+#include <KLocalizedString>
 #include <QRegularExpression>
 #include <QStandardPaths>
 
@@ -106,7 +107,7 @@ void RecordingsModel::clear()
 QString RecordingsModel::exportTo(int row, const QUrl &destination) const
 {
     if (row < 0 || row >= m_entries.size())
-        return u"No such recording"_s;
+        return i18n("No such recording");
     const auto target = destination.toLocalFile();
     QFile::remove(target); // the file dialog already confirmed overwriting
     QFile source(m_entries.at(row).path);
@@ -138,11 +139,12 @@ void RecordingsModel::setRecordingTitle(const QString &title)
     }
 }
 
-TrackRecorder::TrackRecorder(RecordingsModel *model, QString station, QString favicon, QString extension)
+TrackRecorder::TrackRecorder(RecordingsModel *model, QString station, QString favicon, QString extension, bool frameAligned)
     : m_model(model)
     , m_station(std::move(station))
     , m_favicon(std::move(favicon))
     , m_extension(std::move(extension))
+    , m_frameAligned(frameAligned)
 {
 }
 
@@ -170,8 +172,7 @@ void TrackRecorder::boundary()
     m_artist.clear();
     m_title.clear();
     m_tooLong = false;
-    // ICY cuts land mid-frame; Ogg songs start on a page boundary already.
-    m_awaitingFrame = m_extension == "mp3"_L1 || m_extension == "aac"_L1;
+    m_awaitingFrame = m_frameAligned;
 }
 
 void TrackRecorder::setSong(const QString &artist, const QString &title)

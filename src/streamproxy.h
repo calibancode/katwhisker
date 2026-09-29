@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QHash>
 #include <QNetworkAccessManager>
 #include <QObject>
 #include <QQmlEngine>
@@ -128,7 +127,8 @@ private:
 
     QTcpServer m_server;
     QNetworkAccessManager m_nam;
-    QHash<QString, Target> m_urls;
+    QString m_targetId;
+    Target m_target;
     RecordingsModel m_recordings;
     int m_generation = 0;
     QString m_artist;
