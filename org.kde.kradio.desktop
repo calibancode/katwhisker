@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=KRadio
+GenericName=Web Radio
+Comment=Listen to internet radio stations from radio-browser.info
+Exec=kradio
+Icon=radio
+Categories=Qt;KDE;AudioVideo;Audio;Player;
