@@ -546,7 +546,7 @@ Kirigami.ApplicationWindow {
                         return {
                             icon: "media-record",
                             text: i18n("No recordings yet"),
-                            explanation: i18n("When a station announces a new song, it's recorded as it plays. Recordings are kept until you quit; export the ones you want.")
+                            explanation: ""
                         };
                     default:
                         return {
