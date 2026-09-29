@@ -12,6 +12,7 @@ QQC2.ItemDelegate {
     required property string title
     required property string artist
     required property string station
+    required property string favicon
     required property double duration
     required property string fileName
 
@@ -29,10 +30,10 @@ QQC2.ItemDelegate {
     contentItem: RowLayout {
         spacing: Kirigami.Units.largeSpacing
 
-        Kirigami.Icon {
+        StationIcon {
             Layout.preferredWidth: Kirigami.Units.iconSizes.medium
             Layout.preferredHeight: Kirigami.Units.iconSizes.medium
-            source: "audio-x-generic"
+            source: delegate.favicon
         }
 
         ColumnLayout {

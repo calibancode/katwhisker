@@ -55,14 +55,14 @@ Kirigami.ApplicationWindow {
             return;
         current = station;
         recent = [station].concat(recent.filter(s => s.uuid !== station.uuid)).slice(0, 50);
-        player.source = StreamProxy.wrap(station.url, station.hls ?? false, station.name);
+        player.source = StreamProxy.wrap(station.url, station.hls ?? false, station.name, station.favicon ?? "");
         player.play();
         RadioBrowser.countClick(station.uuid);
     }
     function resume() {
         if (!current || playing)
             return;
-        player.source = StreamProxy.wrap(current.url, current.hls ?? false, current.name); // reconnect: a stopped live stream is stale
+        player.source = StreamProxy.wrap(current.url, current.hls ?? false, current.name, current.favicon ?? ""); // reconnect: a stopped live stream is stale
         player.play();
     }
     function togglePlayback() {

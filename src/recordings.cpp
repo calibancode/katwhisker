@@ -67,6 +67,8 @@ QVariant RecordingsModel::data(const QModelIndex &index, int role) const
         return e.artist;
     case StationRole:
         return e.station;
+    case FaviconRole:
+        return e.favicon;
     case DurationRole:
         return e.durationMs;
     case FileNameRole:
@@ -77,7 +79,7 @@ QVariant RecordingsModel::data(const QModelIndex &index, int role) const
 
 QHash<int, QByteArray> RecordingsModel::roleNames() const
 {
-    return {{TitleRole, "title"}, {ArtistRole, "artist"}, {StationRole, "station"},
+    return {{TitleRole, "title"}, {ArtistRole, "artist"}, {StationRole, "station"}, {FaviconRole, "favicon"},
             {DurationRole, "duration"}, {FileNameRole, "fileName"}};
 }
 
@@ -136,9 +138,10 @@ void RecordingsModel::setRecordingTitle(const QString &title)
     }
 }
 
-TrackRecorder::TrackRecorder(RecordingsModel *model, QString station, QString extension)
+TrackRecorder::TrackRecorder(RecordingsModel *model, QString station, QString favicon, QString extension)
     : m_model(model)
     , m_station(std::move(station))
+    , m_favicon(std::move(favicon))
     , m_extension(std::move(extension))
 {
 }
@@ -215,7 +218,7 @@ void TrackRecorder::finish()
 
     const auto title = m_title.isEmpty() ? m_station : m_title;
     const auto base = m_artist.isEmpty() ? title : m_artist + u" – "_s + title;
-    m_model->add({title, m_artist, m_station, duration, m_file->fileName(),
+    m_model->add({title, m_artist, m_station, m_favicon, duration, m_file->fileName(),
                   safeFileName(base) + u'.' + m_extension});
     m_file.reset();
 }

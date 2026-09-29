@@ -310,7 +310,7 @@ StreamProxy::StreamProxy(QObject *parent)
     });
 }
 
-QUrl StreamProxy::wrap(const QUrl &url, bool hls, const QString &stationName)
+QUrl StreamProxy::wrap(const QUrl &url, bool hls, const QString &stationName, const QString &favicon)
 {
     // A new station: forget the previous song, and let old sessions go stale.
     ++m_generation;
@@ -323,7 +323,7 @@ QUrl StreamProxy::wrap(const QUrl &url, bool hls, const QString &stationName)
         return url;
 
     const auto id = QString::number(QRandomGenerator::global()->generate64(), 36);
-    m_urls.insert(id, {url, m_generation, stationName});
+    m_urls.insert(id, {url, m_generation, stationName, favicon});
     return QUrl(u"http://127.0.0.1:%1/%2"_s.arg(m_server.serverPort()).arg(id));
 }
 
@@ -452,7 +452,7 @@ void StreamProxy::startSession(QTcpSocket *socket, const Target &target)
         }
     });
 
-    connect(reply, &QNetworkReply::readyRead, socket, [this, socket, reply, session, stationName = target.station] {
+    connect(reply, &QNetworkReply::readyRead, socket, [this, socket, reply, session, stationName = target.station, favicon = target.favicon] {
         auto data = reply->readAll();
         if (!session->headerSent)
             return; // an error page or redirect body, not audio
@@ -467,7 +467,7 @@ void StreamProxy::startSession(QTcpSocket *socket, const Target &target)
         const bool isOgg = session->ogg.isOgg();
         const auto extension = isOgg ? session->ogg.extension() : session->extension;
         if (!session->recorder && !extension.isEmpty())
-            session->recorder.emplace(&m_recordings, stationName, extension);
+            session->recorder.emplace(&m_recordings, stationName, favicon, extension);
         if (auto &rec = session->recorder) {
             qsizetype pos = 0;
             for (const auto &e : std::as_const(isOgg ? session->oggEvents : session->icyEvents)) {

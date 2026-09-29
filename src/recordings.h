@@ -22,12 +22,13 @@ class RecordingsModel : public QAbstractListModel
     Q_PROPERTY(QString recordingTitle READ recordingTitle NOTIFY recordingTitleChanged)
 
 public:
-    enum Role { TitleRole = Qt::UserRole + 1, ArtistRole, StationRole, DurationRole, FileNameRole };
+    enum Role { TitleRole = Qt::UserRole + 1, ArtistRole, StationRole, FaviconRole, DurationRole, FileNameRole };
 
     struct Entry {
         QString title;
         QString artist;
         QString station;
+        QString favicon;
         qint64 durationMs = 0;
         QString path;
         QString fileName; // suggested export name
@@ -68,7 +69,7 @@ private:
 class TrackRecorder
 {
 public:
-    TrackRecorder(RecordingsModel *model, QString station, QString extension);
+    TrackRecorder(RecordingsModel *model, QString station, QString favicon, QString extension);
     ~TrackRecorder();
 
     // A new song starts at the next write(). Title/artist may come later.
@@ -81,6 +82,7 @@ private:
 
     RecordingsModel *m_model;
     QString m_station;
+    QString m_favicon;
     QString m_extension;
     int m_boundaries = 0;
     std::unique_ptr<QFile> m_file;

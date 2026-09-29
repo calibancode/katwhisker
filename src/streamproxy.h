@@ -109,7 +109,7 @@ public:
 
     // Returns a URL the media player should open instead of `url`. HLS
     // playlists are returned unchanged, since their segment URLs are relative.
-    Q_INVOKABLE QUrl wrap(const QUrl &url, bool hls, const QString &stationName);
+    Q_INVOKABLE QUrl wrap(const QUrl &url, bool hls, const QString &stationName, const QString &favicon);
 
 Q_SIGNALS:
     void metadataChanged();
@@ -120,6 +120,7 @@ private:
         QUrl url;
         int generation = 0;
         QString station;
+        QString favicon;
     };
     void startSession(QTcpSocket *socket, const Target &target);
     void setMetadata(int generation, const QString &artist, const QString &title);
