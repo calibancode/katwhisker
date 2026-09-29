@@ -169,11 +169,20 @@ Kirigami.ApplicationWindow {
         property int order: RadioBrowser.Popular
         readonly property bool discover: root.view === Main.View.Discover
         property bool favoritesByName: false
-        readonly property var model: root.view === Main.View.Favorites
-                                   ? (favoritesByName ? root.favorites.slice().sort((a, b) => a.name.localeCompare(b.name))
-                                                      : root.favorites)
-                                   : root.view === Main.View.Recent ? root.recent
-                                   : RadioBrowser.stations
+        // Local filter for Favorites and Recent; Discover searches the server.
+        property string filter: ""
+        readonly property var model: {
+            if (discover)
+                return RadioBrowser.stations
+            let list = root.view === Main.View.Favorites ? root.favorites : root.recent
+            if (root.view === Main.View.Favorites && favoritesByName)
+                list = list.slice().sort((a, b) => a.name.localeCompare(b.name))
+            const needle = filter.trim().toLowerCase()
+            if (needle)
+                list = list.filter(s => s.name.toLowerCase().includes(needle)
+                                        || (Array.isArray(s.tags) && s.tags.some(t => t.toLowerCase().includes(needle))))
+            return list
+        }
 
         function reload() {
             RadioBrowser.search(query, tag, order)
@@ -185,16 +194,26 @@ Kirigami.ApplicationWindow {
         titleDelegate: Kirigami.SearchField {
             id: searchField
             Layout.fillWidth: true
-            Layout.maximumWidth: Kirigami.Units.gridUnit * 20
-            text: page.query
-            placeholderText: page.tag ? i18n("Search in “%1”…", page.tag) : i18n("Search stations…")
+            text: page.discover ? page.query : page.filter
+            placeholderText: root.view === Main.View.Favorites ? i18n("Search favorites…")
+                           : root.view === Main.View.Recent ? i18n("Search recent…")
+                           : page.tag ? i18n("Search in “%1”…", page.tag) : i18n("Search stations…")
             delaySearch: true
             onAccepted: {
-                if (text === page.query)
-                    return
-                page.query = text
-                root.view = Main.View.Discover
-                page.reload()
+                if (!page.discover) {
+                    page.filter = text
+                } else if (text !== page.query) {
+                    page.query = text
+                    page.reload()
+                }
+            }
+            // Typing breaks the text binding; restore the tab's own query on switch.
+            Connections {
+                target: root
+                function onViewChanged() {
+                    page.filter = ""
+                    searchField.text = page.discover ? page.query : ""
+                }
             }
             Shortcut {
                 sequences: [StandardKey.Find]
@@ -241,18 +260,11 @@ Kirigami.ApplicationWindow {
                 }
             },
             Kirigami.Action {
-                icon.name: "view-refresh"
-                text: i18n("Refresh")
-                displayHint: Kirigami.DisplayHint.IconOnly
-                visible: page.discover
-                shortcut: StandardKey.Refresh
-                onTriggered: page.reload()
-            },
-            Kirigami.Action {
                 icon.name: "clear-history"
                 text: i18n("Clear History")
                 displayHint: Kirigami.DisplayHint.IconOnly
-                visible: root.view === Main.View.Recent && root.recent.length > 0
+                visible: root.view === Main.View.Recent
+                enabled: root.recent.length > 0
                 onTriggered: root.recent = []
             }
         ]
@@ -336,8 +348,12 @@ Kirigami.ApplicationWindow {
                         return { icon: "network-disconnect", text: i18n("Couldn't reach radio-browser.info"), explanation: RadioBrowser.error }
                     switch (root.view) {
                     case Main.View.Favorites:
+                        if (page.filter)
+                            return { icon: "search", text: i18n("No matching favorites"), explanation: "" }
                         return { icon: "starred-symbolic", text: i18n("No favorites yet"), explanation: i18n("Star a station to keep it here.") }
                     case Main.View.Recent:
+                        if (page.filter)
+                            return { icon: "search", text: i18n("No matching stations"), explanation: "" }
                         return { icon: "document-open-recent", text: i18n("Nothing played yet"), explanation: i18n("Stations you listen to show up here.") }
                     default:
                         return { icon: "radio", text: i18n("No stations found"), explanation: i18n("Try a different search.") }
@@ -380,6 +396,7 @@ Kirigami.ApplicationWindow {
         enabled: !(root.activeFocusItem instanceof TextInput)
         onActivated: root.togglePlayback()
     }
+    Shortcut { sequences: [StandardKey.Refresh]; enabled: page.discover; onActivated: page.reload() }
     Shortcut { sequence: "Ctrl+Right"; onActivated: root.step(1) }
     Shortcut { sequence: "Ctrl+Left"; onActivated: root.step(-1) }
     Shortcut { sequence: "M"; enabled: !(root.activeFocusItem instanceof TextInput); onActivated: audio.muted = !audio.muted }
