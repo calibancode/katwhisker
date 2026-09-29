@@ -81,35 +81,23 @@ QQC2.ToolBar {
             }
         }
 
-        QQC2.ToolButton {
+        IconToolButton {
             icon.name: bar.favorite ? "starred-symbolic" : "non-starred-symbolic"
             text: bar.favorite ? i18n("Remove from Favorites") : i18n("Add to Favorites")
-            display: QQC2.AbstractButton.IconOnly
             onClicked: bar.favoriteToggled()
-            QQC2.ToolTip.text: text
-            QQC2.ToolTip.visible: hovered
-            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
         }
 
-        QQC2.ToolButton {
+        IconToolButton {
             visible: bar.canStep
             icon.name: "media-skip-backward"
             text: i18n("Previous Station")
-            display: QQC2.AbstractButton.IconOnly
             onClicked: bar.previousRequested()
-            QQC2.ToolTip.text: text
-            QQC2.ToolTip.visible: hovered
-            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
         }
 
-        QQC2.ToolButton {
+        IconToolButton {
             icon.name: bar.playing ? "media-playback-stop" : "media-playback-start"
             text: bar.playing ? i18n("Stop") : i18n("Play")
-            display: QQC2.AbstractButton.IconOnly
             onClicked: bar.toggleRequested()
-            QQC2.ToolTip.text: text
-            QQC2.ToolTip.visible: hovered
-            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
 
             QQC2.BusyIndicator {
                 anchors.fill: parent
@@ -118,29 +106,23 @@ QQC2.ToolBar {
             }
         }
 
-        QQC2.ToolButton {
+        IconToolButton {
             visible: bar.canStep
             icon.name: "media-skip-forward"
             text: i18n("Next Station")
-            display: QQC2.AbstractButton.IconOnly
             onClicked: bar.nextRequested()
-            QQC2.ToolTip.text: text
-            QQC2.ToolTip.visible: hovered
-            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
         }
 
-        QQC2.ToolButton {
+        IconToolButton {
             id: volumeButton
             readonly property real level: bar.audioOutput.muted ? 0 : bar.audioOutput.volume
             icon.name: level === 0 ? "audio-volume-muted"
                      : level < 0.34 ? "audio-volume-low"
                      : level < 0.67 ? "audio-volume-medium" : "audio-volume-high"
             text: i18n("Volume")
-            display: QQC2.AbstractButton.IconOnly
             onClicked: volumePopup.opened ? volumePopup.close() : volumePopup.open()
             QQC2.ToolTip.text: i18n("Volume: %1% (middle-click to mute)", Math.round(level * 100))
             QQC2.ToolTip.visible: hovered && !volumePopup.opened
-            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
 
             // Scroll to change volume and middle-click to mute, like Plasma's applets.
             WheelHandler {

@@ -57,7 +57,6 @@ private:
     QString m_artUrl;
     QString m_trackId;
     QString m_serviceName;
-    QVariantMap m_lastRoot;
     QVariantMap m_lastPlayer;
     bool m_notifyQueued = false;
 };

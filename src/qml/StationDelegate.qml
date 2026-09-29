@@ -121,14 +121,10 @@ QQC2.ItemDelegate {
             }
         }
 
-        QQC2.ToolButton {
+        IconToolButton {
             icon.name: delegate.favorite ? "starred-symbolic" : "non-starred-symbolic"
             text: delegate.favorite ? i18n("Remove from Favorites") : i18n("Add to Favorites")
-            display: QQC2.AbstractButton.IconOnly
             onClicked: delegate.favoriteToggled()
-            QQC2.ToolTip.text: text
-            QQC2.ToolTip.visible: hovered
-            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
         }
     }
 }

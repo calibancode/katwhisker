@@ -307,18 +307,23 @@ Kirigami.ApplicationWindow {
                 anchors.centerIn: parent
                 width: parent.width - Kirigami.Units.gridUnit * 4
                 visible: list.count === 0 && !(page.discover && RadioBrowser.busy)
-                icon.name: page.discover && RadioBrowser.error ? "network-disconnect"
-                         : root.view === Main.View.Favorites ? "starred-symbolic"
-                         : root.view === Main.View.Recent ? "document-open-recent" : "radio"
-                text: page.discover && RadioBrowser.error ? i18n("Couldn't reach radio-browser.info")
-                    : root.view === Main.View.Favorites ? i18n("No favorites yet")
-                    : root.view === Main.View.Recent ? i18n("Nothing played yet")
-                    : i18n("No stations found")
-                explanation: page.discover && RadioBrowser.error ? RadioBrowser.error
-                           : root.view === Main.View.Favorites ? i18n("Star a station to keep it here.")
-                           : root.view === Main.View.Recent ? i18n("Stations you listen to show up here.")
-                           : i18n("Try a different search.")
-                helpfulAction: page.discover && RadioBrowser.error ? retryAction : null
+                readonly property bool failed: page.discover && RadioBrowser.error !== ""
+                readonly property var content: {
+                    if (failed)
+                        return { icon: "network-disconnect", text: i18n("Couldn't reach radio-browser.info"), explanation: RadioBrowser.error }
+                    switch (root.view) {
+                    case Main.View.Favorites:
+                        return { icon: "starred-symbolic", text: i18n("No favorites yet"), explanation: i18n("Star a station to keep it here.") }
+                    case Main.View.Recent:
+                        return { icon: "document-open-recent", text: i18n("Nothing played yet"), explanation: i18n("Stations you listen to show up here.") }
+                    default:
+                        return { icon: "radio", text: i18n("No stations found"), explanation: i18n("Try a different search.") }
+                    }
+                }
+                icon.name: content.icon
+                text: content.text
+                explanation: content.explanation
+                helpfulAction: failed ? retryAction : null
 
                 Kirigami.Action {
                     id: retryAction
