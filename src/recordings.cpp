@@ -5,11 +5,13 @@
 
 #include <KLocalizedString>
 #include <QRegularExpression>
+#include <QSaveFile>
 #include <QStandardPaths>
 #include <QThreadPool>
 #include <QtEndian>
 
 #include <algorithm>
+#include <memory>
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -163,12 +165,38 @@ void RecordingsModel::exportTo(const QString &path, const QUrl &destination)
         Q_EMIT exported(i18n("No such recording"));
         return;
     }
+    // Opened now so discarding or evicting the recording meanwhile doesn't
+    // take it away: an open file stays readable after it's deleted.
+    auto source = std::make_shared<QFile>(path);
+    if (!source->open(QIODevice::ReadOnly)) {
+        Q_EMIT exported(source->errorString());
+        return;
+    }
     // Off the UI thread: a big file or a slow destination (USB stick,
     // network share) would otherwise freeze the window while copying.
-    QThreadPool::globalInstance()->start([this, source = path, target = destination.toLocalFile()] {
-        QFile::remove(target); // the file dialog already confirmed overwriting
-        QFile file(source);
-        const auto error = file.copy(target) ? QString() : file.errorString();
+    QThreadPool::globalInstance()->start([this, source, target = destination.toLocalFile()] {
+        // Written aside and renamed over the target at the end, so a failed
+        // export leaves any file it was replacing untouched.
+        QSaveFile out(target);
+        QString error;
+        if (out.open(QIODevice::WriteOnly)) {
+            while (!source->atEnd()) {
+                const QByteArray chunk = source->read(1 << 20);
+                if (chunk.isEmpty()) {
+                    if (source->error() != QFileDevice::NoError)
+                        error = source->errorString();
+                    break;
+                }
+                if (out.write(chunk) != chunk.size()) {
+                    error = out.errorString();
+                    break;
+                }
+            }
+            if (error.isEmpty() && !out.commit())
+                error = out.errorString();
+        } else {
+            error = out.errorString();
+        }
         // Safe: the destructor waits for this task before `this` goes away.
         QMetaObject::invokeMethod(this, [this, error] { Q_EMIT exported(error); }, Qt::QueuedConnection);
     });
