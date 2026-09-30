@@ -227,6 +227,7 @@ void TrackRecorder::boundary()
     m_title.clear();
     m_tooLong = false;
     m_awaitingFrame = m_frameAligned;
+    m_mp3Header.clear();
 }
 
 void TrackRecorder::setSong(const QString &artist, const QString &title)
@@ -280,7 +281,8 @@ void TrackRecorder::finish()
     if (!m_mp3Header.isEmpty() && m_file->open(QIODevice::ReadWrite)) {
         // Count the frames after our placeholder, then fill it in place.
         const qsizetype start = xingFrame(m_mp3Header, 0, {}, 0).size();
-        const QByteArray audio = m_file->readAll().sliced(start);
+        const QByteArray all = m_file->readAll();
+        const QByteArray audio = all.size() >= start ? all.sliced(start) : QByteArray();
         QList<qint64> offsets;
         for (qsizetype i = 0; i + 3 <= audio.size();) {
             const int size = quint8(audio[i]) == 0xff ? mp3FrameSize(audio[i + 1], audio[i + 2]) : 0;
@@ -296,7 +298,6 @@ void TrackRecorder::finish()
         }
         m_file->close();
     }
-    m_mp3Header.clear();
 
     const auto title = m_title.isEmpty() ? m_station : m_title;
     const auto base = m_artist.isEmpty() ? title : m_artist + u" – "_s + title;
