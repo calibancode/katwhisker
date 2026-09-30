@@ -132,11 +132,13 @@ private:
     void setMetadata(int generation, const QString &artist, const QString &title);
     void pollIcecastStatus(const QUrl &streamUrl, int generation);
 
+    // Declared first so it's destroyed last: the sessions owned by the
+    // server's sockets and m_nam's replies record into it.
+    RecordingsModel m_recordings;
     QTcpServer m_server;
     QNetworkAccessManager m_nam;
     QString m_targetId;
     Target m_target;
-    RecordingsModel m_recordings;
     int m_generation = 0;
     QString m_artist;
     QString m_title;
