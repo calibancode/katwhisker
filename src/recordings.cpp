@@ -9,6 +9,8 @@
 #include <QThreadPool>
 #include <QtEndian>
 
+#include <algorithm>
+
 using namespace Qt::Literals::StringLiterals;
 
 namespace
@@ -123,6 +125,8 @@ QVariant RecordingsModel::data(const QModelIndex &index, int role) const
         return e.durationMs;
     case FileNameRole:
         return e.fileName;
+    case PathRole:
+        return e.path;
     }
     return {};
 }
@@ -130,7 +134,7 @@ QVariant RecordingsModel::data(const QModelIndex &index, int role) const
 QHash<int, QByteArray> RecordingsModel::roleNames() const
 {
     return {{TitleRole, "title"}, {ArtistRole, "artist"}, {StationRole, "station"}, {FaviconRole, "favicon"},
-            {DurationRole, "duration"}, {FileNameRole, "fileName"}};
+            {DurationRole, "duration"}, {FileNameRole, "fileName"}, {PathRole, "path"}};
 }
 
 void RecordingsModel::remove(int row)
@@ -153,15 +157,15 @@ void RecordingsModel::clear()
     Q_EMIT countChanged();
 }
 
-void RecordingsModel::exportTo(int row, const QUrl &destination)
+void RecordingsModel::exportTo(const QString &path, const QUrl &destination)
 {
-    if (row < 0 || row >= m_entries.size()) {
+    if (std::ranges::none_of(m_entries, [&](const Entry &e) { return e.path == path; })) {
         Q_EMIT exported(i18n("No such recording"));
         return;
     }
     // Off the UI thread: a big file or a slow destination (USB stick,
     // network share) would otherwise freeze the window while copying.
-    QThreadPool::globalInstance()->start([this, source = m_entries.at(row).path, target = destination.toLocalFile()] {
+    QThreadPool::globalInstance()->start([this, source = path, target = destination.toLocalFile()] {
         QFile::remove(target); // the file dialog already confirmed overwriting
         QFile file(source);
         const auto error = file.copy(target) ? QString() : file.errorString();

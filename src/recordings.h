@@ -25,7 +25,7 @@ class RecordingsModel : public QAbstractListModel
     Q_PROPERTY(QString recordingTitle READ recordingTitle NOTIFY recordingTitleChanged)
 
 public:
-    enum Role { TitleRole = Qt::UserRole + 1, ArtistRole, StationRole, FaviconRole, DurationRole, FileNameRole };
+    enum Role { TitleRole = Qt::UserRole + 1, ArtistRole, StationRole, FaviconRole, DurationRole, FileNameRole, PathRole };
 
     struct Entry {
         QString title;
@@ -48,9 +48,10 @@ public:
 
     Q_INVOKABLE void remove(int row);
     Q_INVOKABLE void clear();
-    // Copies the recording to `destination` in the background; exported()
-    // reports the result.
-    Q_INVOKABLE void exportTo(int row, const QUrl &destination);
+    // Copies the recording at `path` (its "path" role, which unlike its row
+    // doesn't shift as songs arrive) to `destination` in the background;
+    // exported() reports the result.
+    Q_INVOKABLE void exportTo(const QString &path, const QUrl &destination);
 
     // Used by the recorder.
     QString newTempPath(const QString &extension);

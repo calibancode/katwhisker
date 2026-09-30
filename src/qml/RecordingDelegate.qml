@@ -19,6 +19,7 @@ QQC2.ItemDelegate {
     required property string favicon
     required property double duration
     required property string fileName
+    required property string path
 
     signal exportRequested()
     signal discardRequested()

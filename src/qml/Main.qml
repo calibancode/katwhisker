@@ -220,10 +220,10 @@ Kirigami.ApplicationWindow {
 
     FileDialog {
         id: exportDialog
-        property int row: -1
+        property string recordingPath
         fileMode: FileDialog.SaveFile
         currentFolder: StandardPaths.writableLocation(StandardPaths.MusicLocation)
-        onAccepted: StreamProxy.recordings.exportTo(row, selectedFile)
+        onAccepted: StreamProxy.recordings.exportTo(recordingPath, selectedFile)
     }
 
     Connections {
@@ -538,7 +538,7 @@ Kirigami.ApplicationWindow {
                     visible: matches
                     height: matches ? implicitHeight : 0
                     onExportRequested: {
-                        exportDialog.row = recordingDelegate.index;
+                        exportDialog.recordingPath = recordingDelegate.path;
                         exportDialog.selectedFile = exportDialog.currentFolder + "/" + encodeURIComponent(recordingDelegate.fileName);
                         exportDialog.open();
                     }
