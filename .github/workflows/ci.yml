@@ -17,7 +17,7 @@ jobs:
         run: |
           pacman -Syu --noconfirm --needed git base-devel cmake ninja extra-cmake-modules \
             qt6-base qt6-declarative qt6-multimedia qt6-svg \
-            kirigami kirigami-addons kcoreaddons ki18n \
+            kirigami kirigami-addons kcoreaddons kdbusaddons ki18n \
             appstream desktop-file-utils reuse
 
       - uses: actions/checkout@v4

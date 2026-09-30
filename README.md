@@ -18,7 +18,7 @@ makepkg -si
 
 ## Building
 
-Needs Qt 6 (including Multimedia), KDE Frameworks 6 (Kirigami, CoreAddons, I18n), Kirigami Addons and Extra CMake Modules.
+Needs Qt 6 (including Multimedia), KDE Frameworks 6 (Kirigami, CoreAddons, DBusAddons, I18n), Kirigami Addons and Extra CMake Modules.
 
 ```sh
 cmake -B build

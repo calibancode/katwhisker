@@ -19,7 +19,7 @@ include(ECMSetupVersion)
 ecm_setup_version(${PROJECT_VERSION} VARIABLE_PREFIX KATWHISKER VERSION_HEADER ${CMAKE_CURRENT_BINARY_DIR}/version.h)
 
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Network Multimedia Widgets DBus)
-find_package(KF6 REQUIRED COMPONENTS CoreAddons I18n)
+find_package(KF6 REQUIRED COMPONENTS CoreAddons DBusAddons I18n)
 find_package(KF6Kirigami REQUIRED)
 find_package(KF6KirigamiAddons REQUIRED) # FormCard.AboutPage
 
@@ -41,7 +41,7 @@ target_include_directories(katwhisker PRIVATE src ${CMAKE_CURRENT_BINARY_DIR})
 
 target_link_libraries(katwhisker PRIVATE
     Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Multimedia Qt6::Widgets Qt6::DBus
-    KF6::CoreAddons KF6::I18n KF6::I18nQml
+    KF6::CoreAddons KF6::DBusAddons KF6::I18n KF6::I18nQml
 )
 
 install(TARGETS katwhisker ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})

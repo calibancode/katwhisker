@@ -4,6 +4,7 @@
 #include "version.h"
 
 #include <KAboutData>
+#include <KDBusService>
 #include <KLocalizedQmlContext>
 #include <KLocalizedString>
 #include <QApplication>
@@ -12,6 +13,7 @@
 #include <QFileInfo>
 #include <QIcon>
 #include <QQmlApplicationEngine>
+#include <QQuickWindow>
 #include <QQuickStyle>
 #include <QSettings>
 #include <QStandardPaths>
@@ -48,6 +50,10 @@ int main(int argc, char *argv[])
     QApplication::setWindowIcon(QIcon::fromTheme(about.desktopFileName(), QIcon(u":/icons/"_s + about.desktopFileName() + u".svg"_s)));
     migrateOldSettings();
 
+    // One instance only: they'd share (and wipe) the recordings directory.
+    // Launching again exits here and raises the running window instead.
+    KDBusService service(KDBusService::Unique);
+
     if (qEnvironmentVariableIsEmpty("QT_QUICK_CONTROLS_STYLE"))
         QQuickStyle::setStyle(u"org.kde.desktop"_s);
 
@@ -57,5 +63,12 @@ int main(int argc, char *argv[])
     engine.loadFromModule("io.github.calibancode.katwhisker", "Main");
     if (engine.rootObjects().isEmpty())
         return 1;
+    QObject::connect(&service, &KDBusService::activateRequested, &engine, [&engine] {
+        if (auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().constFirst())) {
+            window->show();
+            window->raise();
+            window->requestActivate();
+        }
+    });
     return app.exec();
 }
