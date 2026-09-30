@@ -223,7 +223,7 @@ void OggRebaser::parseTags(QByteArrayView page)
         body = body.sliced(7);
     else if (body.startsWith("OpusTags"))
         body = body.sliced(8);
-    else if (!body.isEmpty() && (quint8(body[0]) & 0x7f) == 4) // FLAC VORBIS_COMMENT block
+    else if (body.size() >= 4 && (quint8(body[0]) & 0x7f) == 4) // FLAC VORBIS_COMMENT block
         body = body.sliced(4);
     else
         return;
