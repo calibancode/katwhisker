@@ -18,7 +18,7 @@ include(ECMSetupVersion)
 # The one place the version is set; code gets it from version.h.
 ecm_setup_version(${PROJECT_VERSION} VARIABLE_PREFIX KATWHISKER VERSION_HEADER ${CMAKE_CURRENT_BINARY_DIR}/version.h)
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Network Multimedia Widgets DBus)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Network Multimedia Widgets DBus)
 find_package(KF6 REQUIRED COMPONENTS CoreAddons I18n)
 find_package(KF6Kirigami REQUIRED)
 find_package(KF6KirigamiAddons REQUIRED) # FormCard.AboutPage
