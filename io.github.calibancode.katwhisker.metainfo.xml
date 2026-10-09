@@ -38,11 +38,20 @@
   <screenshots>
     <screenshot type="default">
       <caption>Browsing stations while one plays</caption>
-      <image>https://raw.githubusercontent.com/calibancode/katwhisker/v0.2.0/screenshots/main.webp</image>
+      <image>https://raw.githubusercontent.com/calibancode/katwhisker/v0.3.0/screenshots/main.webp</image>
     </screenshot>
   </screenshots>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.3.0" date="2026-10-09">
+      <description>
+        <ul>
+          <li>Rebuilt the interface with Qt Widgets and C++ for much lower memory use</li>
+          <li>Refined station lists, playback controls, and the About page</li>
+          <li>Discover loads more stations automatically as you scroll</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.2.0" date="2026-10-08">
       <description>
         <ul>

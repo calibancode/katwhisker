@@ -2,19 +2,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "version.h"
+#include "mainwindow.h"
 
 #include <KAboutData>
 #include <KDBusService>
-#include <KLocalizedQmlContext>
 #include <KLocalizedString>
 #include <QApplication>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QIcon>
-#include <QQmlApplicationEngine>
-#include <QQuickWindow>
-#include <QQuickStyle>
 #include <QSettings>
 #include <QStandardPaths>
 
@@ -60,21 +57,12 @@ int main(int argc, char *argv[])
     // MPRIS and settings. Launching again raises the running window instead.
     KDBusService service(KDBusService::Unique);
 
-    if (qEnvironmentVariableIsEmpty("QT_QUICK_CONTROLS_STYLE"))
-        QQuickStyle::setStyle(u"org.kde.desktop"_s);
-
-    QQmlApplicationEngine engine;
-    KLocalization::setupLocalizedContext(&engine);
-    engine.setInitialProperties({{u"aboutData"_s, QVariant::fromValue(KAboutData::applicationData())}});
-    engine.loadFromModule("io.github.calibancode.katwhisker", "Main");
-    if (engine.rootObjects().isEmpty())
-        return 1;
-    QObject::connect(&service, &KDBusService::activateRequested, &engine, [&engine] {
-        if (auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().constFirst())) {
-            window->show();
-            window->raise();
-            window->requestActivate();
-        }
+    MainWindow window;
+    QObject::connect(&service, &KDBusService::activateRequested, &window, [&window] {
+        window.show();
+        window.raise();
+        window.activateWindow();
     });
+    window.show();
     return app.exec();
 }

@@ -16,9 +16,9 @@ jobs:
       - name: Install dependencies
         run: |
           pacman -Syu --noconfirm --needed git base-devel cmake ninja extra-cmake-modules \
-            qt6-base qt6-declarative qt6-multimedia qt6-svg \
-            kirigami kirigami-addons kcoreaddons kdbusaddons ki18n \
-            appstream desktop-file-utils reuse
+            qt6-base qt6-multimedia qt6-svg \
+            kcoreaddons kdbusaddons ki18n \
+            appstream desktop-file-utils reuse dbus
 
       - uses: actions/checkout@v4
 
@@ -32,8 +32,8 @@ jobs:
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build build
 
-      - name: Lint QML
-        run: cmake --build build --target katwhisker_qmllint
+      - name: Test
+        run: dbus-run-session -- ctest --test-dir build --output-on-failure
 
       - name: Check licensing (REUSE)
         run: reuse lint

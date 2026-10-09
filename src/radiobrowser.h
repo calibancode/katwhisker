@@ -5,7 +5,6 @@
 
 #include <QNetworkAccessManager>
 #include <QObject>
-#include <QQmlEngine>
 #include <QUrl>
 #include <QUrlQuery>
 #include <QVariantList>
@@ -14,8 +13,6 @@
 class RadioBrowser : public QObject
 {
     Q_OBJECT
-    QML_ELEMENT
-    QML_SINGLETON
 
     Q_PROPERTY(QVariantList stations READ stations NOTIFY stationsChanged)
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)

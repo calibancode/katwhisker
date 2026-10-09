@@ -6,16 +6,14 @@
 #include <QDBusAbstractAdaptor>
 #include <QDBusObjectPath>
 #include <QObject>
-#include <QQmlEngine>
 #include <QVariantMap>
 
 // Exposes the player on D-Bus as MPRIS2, so media keys, the Plasma media
-// applet and the lock screen can control it. QML feeds state in and reacts
+// applet and the lock screen can control it. The UI feeds state in and reacts
 // to the *Requested signals.
 class Mpris : public QObject
 {
     Q_OBJECT
-    QML_ELEMENT
 
     Q_PROPERTY(bool playing MEMBER m_playing NOTIFY stateChanged)
     Q_PROPERTY(bool canPlay MEMBER m_canPlay NOTIFY stateChanged)

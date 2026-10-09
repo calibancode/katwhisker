@@ -28,7 +28,7 @@ Mpris::Mpris(QObject *parent)
     bus.registerService(m_serviceName);
 
     connect(this, &Mpris::stateChanged, this, [this] {
-        // Coalesce the burst of property updates QML sends in one frame.
+        // Coalesce the burst of property updates the UI sends together.
         if (!m_notifyQueued) {
             m_notifyQueued = true;
             QTimer::singleShot(0, this, &Mpris::notify);

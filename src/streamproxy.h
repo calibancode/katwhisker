@@ -5,7 +5,6 @@
 
 #include <QNetworkAccessManager>
 #include <QObject>
-#include <QQmlEngine>
 #include <QTcpServer>
 #include <QUrl>
 
@@ -88,8 +87,6 @@ private:
 class StreamProxy : public QObject
 {
     Q_OBJECT
-    QML_ELEMENT
-    QML_SINGLETON
 
     Q_PROPERTY(QString artist READ artist NOTIFY metadataChanged)
     Q_PROPERTY(QString title READ title NOTIFY metadataChanged)
