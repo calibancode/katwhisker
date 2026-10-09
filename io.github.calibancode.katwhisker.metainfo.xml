@@ -38,11 +38,19 @@
   <screenshots>
     <screenshot type="default">
       <caption>Browsing stations while one plays</caption>
-      <image>https://raw.githubusercontent.com/calibancode/katwhisker/v0.1.0/screenshots/main.webp</image>
+      <image>https://raw.githubusercontent.com/calibancode/katwhisker/v0.2.0/screenshots/main.webp</image>
     </screenshot>
   </screenshots>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.2.0" date="2026-10-08">
+      <description>
+        <ul>
+          <li>New Songs tab: a searchable history of the songs you've heard, to copy their titles later</li>
+          <li>Song recording has been removed</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.1.1" date="2026-09-29">
       <description>
         <p>Bug fixes for recordings:</p>
