@@ -30,6 +30,7 @@ public:
 
     QByteArray process(const QByteArray &data);
 
+    bool failed() const { return m_failed; }
     bool isOgg() const { return m_mode == Ogg; }
     bool isDecided() const { return m_mode != Unknown; }
     // Seconds of audio emitted so far, from the rewritten granule positions;
@@ -45,6 +46,7 @@ private:
     void emitPage(QByteArray page, QByteArray &out);
     void parseTags(QByteArrayView page);
 
+    bool m_failed = false;
     QByteArray m_in;
     enum { Unknown, Ogg, Passthrough } m_mode = Unknown;
     // Per logical stream: the first audio page is held back until the next

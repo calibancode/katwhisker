@@ -33,6 +33,12 @@ static void migrateOldSettings()
 
 int main(int argc, char *argv[])
 {
+    // This is an audio player: FFmpeg's video-device probing needlessly loads
+    // CUDA/VAAPI drivers, including for encoding. Respect explicit overrides.
+    for (const auto *name : {"QT_FFMPEG_DECODING_HW_DEVICE_TYPES", "QT_FFMPEG_ENCODING_HW_DEVICE_TYPES"}) {
+        if (!qEnvironmentVariableIsSet(name))
+            qputenv(name, ",");
+    }
     QApplication app(argc, argv);
     KLocalizedString::setApplicationDomain("katwhisker");
 

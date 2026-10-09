@@ -23,6 +23,7 @@ namespace
 {
 constexpr int HeaderSize = 27;
 constexpr double CushionSeconds = 2.0;
+constexpr qsizetype MaxBufferedBytes = 1024 * 1024;
 
 constexpr auto crcTable = [] {
     std::array<quint32, 256> table{};
@@ -81,6 +82,8 @@ void setGranule(QByteArray &page, qint64 granule)
 
 QByteArray OggRebaser::process(const QByteArray &data)
 {
+    if (m_failed)
+        return {};
     if (m_mode == Passthrough)
         return data;
 
@@ -111,6 +114,10 @@ QByteArray OggRebaser::process(const QByteArray &data)
         if (m_in.size() - pos < size)
             break;
         emitPage(m_in.sliced(pos, size), out);
+        if (m_failed) {
+            m_in = {};
+            return {};
+        }
         pos += size;
     }
     m_in.remove(0, pos);
@@ -162,10 +169,16 @@ void OggRebaser::emitPage(QByteArray page, QByteArray &out)
     if (granule <= 0) {
         if (granule == 0 && !bos)
             parseTags(page);
-        if (m_held)
+        if (m_held) {
+            if (m_held->following.size() + page.size() > MaxBufferedBytes) {
+                m_held.reset();
+                m_failed = true;
+                return;
+            }
             m_held->following += page;
-        else
+        } else {
             out += page;
+        }
         return;
     }
 
@@ -372,6 +385,7 @@ void StreamProxy::startSession(QTcpSocket *socket, const Target &target)
     req.setRawHeader("Icy-MetaData", "1");
     req.setTransferTimeout(0); // live streams never finish
     auto *reply = m_nam.get(req);
+    reply->setReadBufferSize(64 * 1024);
 
     struct Session {
         bool headerSent = false;
@@ -447,6 +461,11 @@ void StreamProxy::startSession(QTcpSocket *socket, const Target &target)
         if (session->icy)
             data = session->icy->process(data);
         data = session->ogg.process(data);
+        // A stalled player or malformed stream must not grow these queues.
+        if (session->ogg.failed() || socket->bytesToWrite() + data.size() > MaxBufferedBytes) {
+            socket->abort();
+            return;
+        }
 
         if (session->live) {
             socket->write(data);
@@ -455,8 +474,12 @@ void StreamProxy::startSession(QTcpSocket *socket, const Target &target)
         session->pending += data;
         const auto seconds = session->ogg.emittedSeconds();
         // Non-Ogg, or an Ogg codec we can't time: no cushion, play right away.
+        // Half the socket cap is cushion enough, however little time it holds
+        // (hi-res FLAC can pass it before CushionSeconds), and leaves room for
+        // the flush below not to trip that cap.
         const bool cushioned = session->ogg.isDecided()
-            && (!session->ogg.isOgg() || (seconds ? *seconds >= CushionSeconds : session->pending.size() > 256 * 1024));
+            && (!session->ogg.isOgg() || session->pending.size() >= MaxBufferedBytes / 2
+                || (seconds ? *seconds >= CushionSeconds : session->pending.size() > 256 * 1024));
         if (cushioned) {
             session->live = true;
             socket->write(std::exchange(session->pending, {}));

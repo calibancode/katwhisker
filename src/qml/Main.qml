@@ -7,7 +7,6 @@ import QtCore
 import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
-import QtMultimedia
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 import io.github.calibancode.katwhisker
@@ -41,9 +40,10 @@ Kirigami.ApplicationWindow {
     property var queue: []
     property int view: Main.View.Discover
 
-    readonly property bool playing: player.playbackState === MediaPlayer.PlayingState
-    readonly property bool connecting: player.playbackState === MediaPlayer.PlayingState && (player.mediaStatus === MediaPlayer.LoadingMedia || player.mediaStatus === MediaPlayer.StalledMedia)
-    readonly property string nowPlaying: StreamProxy.title ? (StreamProxy.artist ? i18nc("artist – song title", "%1 – %2", StreamProxy.artist, StreamProxy.title) : StreamProxy.title) : player.metaData.stringValue(MediaMetaData.Title).trim()
+    readonly property var player: playbackLoader.item
+    readonly property bool playing: player?.playing ?? false
+    readonly property bool connecting: player?.connecting ?? false
+    readonly property string nowPlaying: StreamProxy.title ? (StreamProxy.artist ? i18nc("artist – song title", "%1 – %2", StreamProxy.artist, StreamProxy.title) : StreamProxy.title) : (player?.title ?? "")
     readonly property int queueIndex: current ? queue.findIndex(s => s.uuid === current.uuid) : -1
 
     function isFavorite(uuid) {
@@ -51,6 +51,12 @@ Kirigami.ApplicationWindow {
     }
     function toggleFavorite(station) {
         favorites = isFavorite(station.uuid) ? favorites.filter(s => s.uuid !== station.uuid) : favorites.concat([station]);
+    }
+    function ensurePlayback() {
+        if (!playbackLoader.active) {
+            playbackLoader.setSource("Playback.qml", { controls: audio });
+            playbackLoader.active = true;
+        }
     }
     function play(station, fromList) {
         if (fromList) {
@@ -63,6 +69,7 @@ Kirigami.ApplicationWindow {
             return;
         current = station;
         recent = [station].concat(recent.filter(s => s.uuid !== station.uuid)).slice(0, 50);
+        ensurePlayback();
         player.source = streamSource(station);
         player.play();
         RadioBrowser.countClick(station.uuid);
@@ -70,6 +77,7 @@ Kirigami.ApplicationWindow {
     function resume() {
         if (!current || playing)
             return;
+        ensurePlayback();
         player.source = streamSource(current); // reconnect: a stopped live stream is stale
         player.play();
     }
@@ -77,7 +85,7 @@ Kirigami.ApplicationWindow {
         return StreamProxy.wrap(station.url, station.hls ?? false);
     }
     function stop() {
-        player.stop();
+        player?.stop();
         // stop() schedules the player's teardown, which waits for its reader
         // thread; end our connections first so that reader isn't left
         // blocked on a socket only this (then waiting) thread can serve.
@@ -175,12 +183,15 @@ Kirigami.ApplicationWindow {
         StreamProxy.closeConnections();
     }
 
-    MediaPlayer {
-        id: player
-        audioOutput: AudioOutput {
-            id: audio
-            volume: 0.8
-        }
+    QtObject {
+        id: audio
+        property real volume: 0.8
+        property bool muted: false
+    }
+
+    Loader {
+        id: playbackLoader
+        active: false
     }
 
     Mpris {
@@ -641,7 +652,7 @@ Kirigami.ApplicationWindow {
             playing: root.playing
             connecting: root.connecting
             nowPlaying: root.nowPlaying
-            errorString: player.error !== MediaPlayer.NoError ? player.errorString : ""
+            errorString: player?.problem ?? ""
             favorite: root.current !== null && root.isFavorite(root.current.uuid)
             canStep: root.queue.length > 1
             audioOutput: audio

@@ -30,7 +30,7 @@ qt_add_executable(katwhisker src/main.cpp)
 
 qt_add_qml_module(katwhisker
     URI io.github.calibancode.katwhisker
-    QML_FILES src/qml/Main.qml src/qml/StationDelegate.qml src/qml/PlayerBar.qml src/qml/StationIcon.qml src/qml/SongDelegate.qml src/qml/IconToolButton.qml
+    QML_FILES src/qml/Main.qml src/qml/StationDelegate.qml src/qml/PlayerBar.qml src/qml/StationIcon.qml src/qml/SongDelegate.qml src/qml/IconToolButton.qml src/qml/Playback.qml
     SOURCES src/radiobrowser.h src/radiobrowser.cpp src/mpris.h src/mpris.cpp src/streamproxy.h src/streamproxy.cpp
 )
 

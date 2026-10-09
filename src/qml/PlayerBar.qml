@@ -6,7 +6,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
-import QtMultimedia
 import org.kde.kirigami as Kirigami
 
 QQC2.ToolBar {
@@ -19,7 +18,7 @@ QQC2.ToolBar {
     property bool canStep: false
     property string nowPlaying: ""
     property string errorString: ""
-    property AudioOutput audioOutput
+    property var audioOutput
 
     signal toggleRequested()
     signal nextRequested()
