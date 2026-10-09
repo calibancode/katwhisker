@@ -50,8 +50,8 @@ int main(int argc, char *argv[])
     QApplication::setWindowIcon(QIcon::fromTheme(about.desktopFileName(), QIcon(u":/icons/"_s + about.desktopFileName() + u".svg"_s)));
     migrateOldSettings();
 
-    // One instance only: they'd share (and wipe) the recordings directory.
-    // Launching again exits here and raises the running window instead.
+    // One instance only: two would play over each other and fight over
+    // MPRIS and settings. Launching again raises the running window instead.
     KDBusService service(KDBusService::Unique);
 
     if (qEnvironmentVariableIsEmpty("QT_QUICK_CONTROLS_STYLE"))

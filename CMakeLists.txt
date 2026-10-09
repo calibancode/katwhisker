@@ -30,8 +30,8 @@ qt_add_executable(katwhisker src/main.cpp)
 
 qt_add_qml_module(katwhisker
     URI io.github.calibancode.katwhisker
-    QML_FILES src/qml/Main.qml src/qml/StationDelegate.qml src/qml/PlayerBar.qml src/qml/StationIcon.qml src/qml/RecordingDelegate.qml src/qml/IconToolButton.qml
-    SOURCES src/radiobrowser.h src/radiobrowser.cpp src/mpris.h src/mpris.cpp src/streamproxy.h src/streamproxy.cpp src/recordings.h src/recordings.cpp
+    QML_FILES src/qml/Main.qml src/qml/StationDelegate.qml src/qml/PlayerBar.qml src/qml/StationIcon.qml src/qml/SongDelegate.qml src/qml/IconToolButton.qml
+    SOURCES src/radiobrowser.h src/radiobrowser.cpp src/mpris.h src/mpris.cpp src/streamproxy.h src/streamproxy.cpp
 )
 
 # Built in as the window icon's fallback, for running without installing.

@@ -16,8 +16,7 @@
     </p>
     <ul>
       <li>Search stations, browse by tag, and keep favorites</li>
-      <li>Shows the current song where the station provides it</li>
-      <li>Records songs as they play, bit-for-bit, to export the ones you like</li>
+      <li>Shows the current song where the station provides it, and keeps a history of songs you've heard</li>
       <li>Works with media keys and Plasma's media controls</li>
     </ul>
   </description>

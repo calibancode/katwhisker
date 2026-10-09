@@ -9,8 +9,6 @@
 #include <QTcpServer>
 #include <QUrl>
 
-#include "recordings.h"
-
 #include <functional>
 #include <optional>
 
@@ -29,13 +27,8 @@ class OggRebaser
 {
 public:
     std::function<void(const QString &artist, const QString &title)> onTags;
-    // A new logical stream (in Icecast, usually a new song) starts at this
-    // offset of the output being produced.
-    std::function<void(qsizetype offset)> onStreamStart;
 
     QByteArray process(const QByteArray &data);
-    // File extension for the codec, once the first stream header was seen.
-    QString extension() const { return m_extension; }
 
     bool isOgg() const { return m_mode == Ogg; }
     bool isDecided() const { return m_mode != Unknown; }
@@ -60,7 +53,6 @@ private:
     std::optional<qint64> m_base;
     qint64 m_lastOut = 0;
     std::optional<qint64> m_firstOut;
-    QString m_extension;
     int m_sampleRate = 0;
     int m_fixedBlockSize = 0; // FLAC only
 };
@@ -76,9 +68,8 @@ public:
     {
     }
 
-    // Called with each new StreamTitle and where the next song's audio
-    // starts in the output being produced.
-    std::function<void(const QString &streamTitle, qsizetype offset)> onTitle;
+    // Called with each new StreamTitle.
+    std::function<void(const QString &streamTitle)> onTitle;
 
     QByteArray process(const QByteArray &data);
 
@@ -100,18 +91,16 @@ class StreamProxy : public QObject
 
     Q_PROPERTY(QString artist READ artist NOTIFY metadataChanged)
     Q_PROPERTY(QString title READ title NOTIFY metadataChanged)
-    Q_PROPERTY(RecordingsModel *recordings READ recordings CONSTANT)
 
 public:
     explicit StreamProxy(QObject *parent = nullptr);
 
     QString artist() const { return m_artist; }
     QString title() const { return m_title; }
-    RecordingsModel *recordings() { return &m_recordings; }
 
     // Returns a URL the media player should open instead of `url`. HLS
     // playlists are returned unchanged, since their segment URLs are relative.
-    Q_INVOKABLE QUrl wrap(const QUrl &url, bool hls, const QString &stationName, const QString &favicon);
+    Q_INVOKABLE QUrl wrap(const QUrl &url, bool hls);
     // Ends all player connections. The player's reader thread blocks on our
     // socket, and its teardown blocks the UI thread we serve from, so
     // connections must end before the player lets go of a stream.
@@ -125,16 +114,11 @@ private:
     struct Target {
         QUrl url;
         int generation = 0;
-        QString station;
-        QString favicon;
     };
     void startSession(QTcpSocket *socket, const Target &target);
     void setMetadata(int generation, const QString &artist, const QString &title);
     void pollIcecastStatus(const QUrl &streamUrl, int generation);
 
-    // Declared first so it's destroyed last: the sessions owned by the
-    // server's sockets and m_nam's replies record into it.
-    RecordingsModel m_recordings;
     QTcpServer m_server;
     QNetworkAccessManager m_nam;
     QString m_targetId;

@@ -139,13 +139,10 @@ void OggRebaser::emitPage(QByteArray page, QByteArray &out)
             const int minBlock = (si[0] << 8) | si[1];
             const int maxBlock = (si[2] << 8) | si[3];
             m_fixedBlockSize = minBlock == maxBlock ? minBlock : 0;
-            m_extension = u"oga"_s;
         } else if (body.startsWith("\x01vorbis") && body.size() >= 16) {
             m_sampleRate = qFromLittleEndian<quint32>(body.data() + 12);
-            m_extension = u"ogg"_s;
         } else if (body.startsWith("OpusHead")) {
             m_sampleRate = 48000; // Opus granules are always 48 kHz
-            m_extension = u"opus"_s;
         }
     }
 
@@ -158,8 +155,6 @@ void OggRebaser::emitPage(QByteArray page, QByteArray &out)
             m_held.reset();
         }
         m_base.reset();
-        if (onStreamStart)
-            onStreamStart(out.size());
     }
 
     // Header pages carry granule 0 and pages without a finished packet -1;
@@ -294,7 +289,7 @@ QByteArray IcyStripper::process(const QByteArray &data)
                 if (end >= from) {
                     const auto title = decodeText(m_meta.sliced(from, end - from));
                     if (title != std::exchange(m_lastTitle, title))
-                        onTitle(title, out.size());
+                        onTitle(title);
                 }
             }
             m_metaLen = -1;
@@ -314,7 +309,7 @@ StreamProxy::StreamProxy(QObject *parent)
     });
 }
 
-QUrl StreamProxy::wrap(const QUrl &url, bool hls, const QString &stationName, const QString &favicon)
+QUrl StreamProxy::wrap(const QUrl &url, bool hls)
 {
     // A new station: forget the previous song, and let old sessions go stale.
     closeConnections();
@@ -329,7 +324,7 @@ QUrl StreamProxy::wrap(const QUrl &url, bool hls, const QString &stationName, co
     const auto id = QString::number(QRandomGenerator::global()->generate64(), 36);
     // Only the current station is served; players reconnect through it.
     m_targetId = id;
-    m_target = {url, m_generation, stationName, favicon};
+    m_target = {url, m_generation};
     return QUrl(u"http://127.0.0.1:%1/%2"_s.arg(m_server.serverPort()).arg(id));
 }
 
@@ -388,33 +383,17 @@ void StreamProxy::startSession(QTcpSocket *socket, const Target &target)
         // starts as soon as there's enough to ride out network jitter.
         bool live = false;
         QByteArray pending;
-
-        // Song boundaries found while processing one chunk, in output order.
-        struct Event {
-            qsizetype offset;
-            bool boundary;
-            QString artist, title;
-        };
-        QList<Event> events;
-        std::optional<TrackRecorder> recorder;
-        QString extension; // from Content-Type; Ogg streams know their own
     };
     auto session = std::make_shared<Session>();
 
     // Callbacks stored inside the session must not own it (a shared_ptr
-    // cycle would keep it, and its half-recorded song, alive forever).
+    // cycle would keep it alive forever).
     Session *self = session.get();
     auto report = [this, generation, self](const QString &artist, const QString &title) {
         self->gotMetadata = true;
         setMetadata(generation, artist, title);
     };
-    session->ogg.onTags = [self, report](const QString &artist, const QString &title) {
-        report(artist, title);
-        self->events.append({-1, false, artist, title}); // belongs to the latest boundary
-    };
-    session->ogg.onStreamStart = [self](qsizetype offset) {
-        self->events.append({offset, true, {}, {}});
-    };
+    session->ogg.onTags = report;
 
     connect(reply, &QNetworkReply::redirected, reply, &QNetworkReply::redirectAllowed);
     connect(socket, &QTcpSocket::disconnected, reply, [reply] {
@@ -433,18 +412,13 @@ void StreamProxy::startSession(QTcpSocket *socket, const Target &target)
 
         if (const int metaInt = reply->rawHeader("icy-metaint").toInt(); metaInt > 0) {
             session->icy.emplace(metaInt);
-            session->icy->onTitle = [report, self](const QString &streamTitle, qsizetype offset) {
+            session->icy->onTitle = [report](const QString &streamTitle) {
                 const auto [artist, title] = splitStreamTitle(streamTitle);
                 report(artist, title);
-                // Ogg marks songs itself, and rewrites the bytes so ICY
-                // offsets wouldn't line up; ICY boundaries are for the rest.
-                if (!self->ogg.isOgg())
-                    self->events.append({offset, true, artist, title});
             };
         }
 
         const auto type = reply->header(QNetworkRequest::ContentTypeHeader).toByteArray();
-        session->extension = type.contains("aac") ? u"aac"_s : type.contains("mpeg") ? u"mp3"_s : QString();
         socket->write("HTTP/1.0 200 OK\r\nContent-Type: " + (type.isEmpty() ? "application/octet-stream" : type)
                       + "\r\nCache-Control: no-cache\r\n\r\n");
 
@@ -466,34 +440,14 @@ void StreamProxy::startSession(QTcpSocket *socket, const Target &target)
         }
     });
 
-    connect(reply, &QNetworkReply::readyRead, socket, [this, socket, reply, session, stationName = target.station, favicon = target.favicon] {
+    connect(reply, &QNetworkReply::readyRead, socket, [socket, reply, session] {
         auto data = reply->readAll();
         if (!session->headerSent)
             return; // an error page or redirect body, not audio
-        session->events.clear();
         if (session->icy)
             data = session->icy->process(data);
         data = session->ogg.process(data);
 
-        const bool isOgg = session->ogg.isOgg();
-        const auto extension = isOgg ? session->ogg.extension() : session->extension;
-        if (!session->recorder && !extension.isEmpty())
-            session->recorder.emplace(&m_recordings, stationName, favicon, extension, !isOgg);
-        if (auto &rec = session->recorder) {
-            qsizetype pos = 0;
-            for (const auto &e : std::as_const(session->events)) {
-                if (e.offset >= 0) {
-                    const auto cut = qBound(pos, e.offset, data.size());
-                    rec->write(data.sliced(pos, cut - pos));
-                    pos = cut;
-                }
-                if (e.boundary)
-                    rec->boundary();
-                if (!e.title.isEmpty() || !e.artist.isEmpty())
-                    rec->setSong(e.artist, e.title);
-            }
-            rec->write(data.sliced(pos));
-        }
         if (session->live) {
             socket->write(data);
             return;
@@ -502,7 +456,7 @@ void StreamProxy::startSession(QTcpSocket *socket, const Target &target)
         const auto seconds = session->ogg.emittedSeconds();
         // Non-Ogg, or an Ogg codec we can't time: no cushion, play right away.
         const bool cushioned = session->ogg.isDecided()
-            && (!isOgg || (seconds ? *seconds >= CushionSeconds : session->pending.size() > 256 * 1024));
+            && (!session->ogg.isOgg() || (seconds ? *seconds >= CushionSeconds : session->pending.size() > 256 * 1024));
         if (cushioned) {
             session->live = true;
             socket->write(std::exchange(session->pending, {}));

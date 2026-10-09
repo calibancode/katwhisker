@@ -8,7 +8,6 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import QtMultimedia
-import QtQuick.Dialogs
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 import io.github.calibancode.katwhisker
@@ -20,7 +19,7 @@ Kirigami.ApplicationWindow {
         Discover,
         Favorites,
         Recent,
-        Recordings
+        Songs
     }
 
     title: current ? current.name : i18n("Katwhisker")
@@ -36,6 +35,8 @@ Kirigami.ApplicationWindow {
     property var current: null
     property var favorites: []
     property var recent: []
+    // Songs heard, newest first: {title, artist, station, favicon, time}.
+    property var history: []
     // The list the current station was started from; next/previous walk it.
     property var queue: []
     property int view: Main.View.Discover
@@ -73,7 +74,7 @@ Kirigami.ApplicationWindow {
         player.play();
     }
     function streamSource(station) {
-        return StreamProxy.wrap(station.url, station.hls ?? false, station.name, station.favicon ?? "");
+        return StreamProxy.wrap(station.url, station.hls ?? false);
     }
     function stop() {
         player.stop();
@@ -98,6 +99,9 @@ Kirigami.ApplicationWindow {
         page.query = "";
         page.reload();
     }
+    function songText(song) {
+        return song.artist ? i18nc("artist – song title", "%1 – %2", song.artist, song.title) : song.title;
+    }
     function copyText(text, message) {
         clipboard.text = text;
         clipboard.selectAll();
@@ -121,6 +125,7 @@ Kirigami.ApplicationWindow {
         property alias favoritesByName: page.favoritesByName
         property string favoritesJson: "[]"
         property string recentJson: "[]"
+        property string historyJson: "[]"
         property string queueJson: "[]"
         property string currentJson: ""
         property bool wasPlaying: false
@@ -137,6 +142,7 @@ Kirigami.ApplicationWindow {
     Component.onCompleted: {
         favorites = parse(settings.favoritesJson, []);
         recent = parse(settings.recentJson, []);
+        history = parse(settings.historyJson, []);
         queue = parse(settings.queueJson, []);
         current = parse(settings.currentJson, null);
         if (settings.wasPlaying)
@@ -145,6 +151,23 @@ Kirigami.ApplicationWindow {
     }
     onFavoritesChanged: settings.favoritesJson = JSON.stringify(favorites)
     onRecentChanged: settings.recentJson = JSON.stringify(recent)
+    onHistoryChanged: settings.historyJson = JSON.stringify(history)
+    onNowPlayingChanged: {
+        if (!nowPlaying || !current)
+            return;
+        const song = {
+            title: StreamProxy.title || nowPlaying,
+            artist: StreamProxy.title ? StreamProxy.artist : "",
+            station: current.name,
+            favicon: current.favicon ?? "",
+            time: Date.now()
+        };
+        // Metadata can repeat, e.g. after reconnecting to the same station.
+        const last = history[0];
+        if (last && last.title === song.title && last.artist === song.artist && last.station === song.station)
+            return;
+        history = [song].concat(history).slice(0, 500);
+    }
     onQueueChanged: settings.queueJson = JSON.stringify(queue)
     onCurrentChanged: settings.currentJson = current ? JSON.stringify(current) : ""
     onClosing: {
@@ -218,21 +241,6 @@ Kirigami.ApplicationWindow {
         }
     }
 
-    FileDialog {
-        id: exportDialog
-        property string recordingPath
-        fileMode: FileDialog.SaveFile
-        currentFolder: StandardPaths.writableLocation(StandardPaths.MusicLocation)
-        onAccepted: StreamProxy.recordings.exportTo(recordingPath, selectedFile)
-    }
-
-    Connections {
-        target: StreamProxy.recordings
-        function onExported(error) {
-            root.showPassiveNotification(error ? i18n("Couldn't export: %1", error) : i18n("Recording exported"));
-        }
-    }
-
     // Qt Quick has no clipboard API; a hidden TextEdit is the standard workaround.
     TextEdit {
         id: clipboard
@@ -255,7 +263,7 @@ Kirigami.ApplicationWindow {
         property bool favoritesByName: false
         // Local filter for Favorites and Recent; Discover searches the server.
         property string filter: ""
-        readonly property bool recordingsView: root.view === Main.View.Recordings
+        readonly property bool songsView: root.view === Main.View.Songs
         // Everything that differs per tab in the toolbar, in one place.
         readonly property var viewConfig: {
             const popupSort = menu => () => menu.popup(viewAction, 0, viewAction.height);
@@ -276,13 +284,13 @@ Kirigami.ApplicationWindow {
                     actionEnabled: root.recent.length > 0,
                     action: () => root.recent = []
                 };
-            case Main.View.Recordings:
+            case Main.View.Songs:
                 return {
-                    placeholder: i18n("Search recordings…"),
-                    actionIcon: "edit-clear-all",
-                    actionText: i18n("Discard All"),
-                    actionEnabled: StreamProxy.recordings.count > 0,
-                    action: () => StreamProxy.recordings.clear()
+                    placeholder: i18n("Search songs…"),
+                    actionIcon: "edit-clear-history",
+                    actionText: i18n("Clear History"),
+                    actionEnabled: root.history.length > 0,
+                    action: () => root.history = []
                 };
             default:
                 return {
@@ -297,12 +305,12 @@ Kirigami.ApplicationWindow {
         readonly property var model: {
             if (discover)
                 return RadioBrowser.stations;
-            if (recordingsView)
-                return StreamProxy.recordings; // filtered in its delegate
+            const needle = filter.trim().toLowerCase();
+            if (songsView)
+                return needle ? root.history.filter(s => [s.title, s.artist, s.station].some(t => t.toLowerCase().includes(needle))) : root.history;
             let list = root.view === Main.View.Favorites ? root.favorites : root.recent;
             if (root.view === Main.View.Favorites && favoritesByName)
                 list = list.slice().sort((a, b) => a.name.localeCompare(b.name));
-            const needle = filter.trim().toLowerCase();
             if (needle)
                 list = list.filter(s => s.name.toLowerCase().includes(needle) || (Array.isArray(s.tags) && s.tags.some(t => t.toLowerCase().includes(needle))));
             return list;
@@ -313,7 +321,7 @@ Kirigami.ApplicationWindow {
             list.positionViewAtBeginning();
         }
 
-        title: [i18n("Discover"), i18n("Favorites"), i18n("Recent")][root.view]
+        title: [i18n("Discover"), i18n("Favorites"), i18n("Recent"), i18n("Songs")][root.view]
 
         globalToolBarStyle: Kirigami.ApplicationHeaderStyle.None
 
@@ -470,7 +478,7 @@ Kirigami.ApplicationWindow {
                     text: i18n("Recent")
                 }
                 QQC2.TabButton {
-                    text: i18n("Recordings")
+                    text: i18n("Songs")
                 }
             }
 
@@ -530,23 +538,16 @@ Kirigami.ApplicationWindow {
             }
 
             Component {
-                id: recordingComponent
-                RecordingDelegate {
-                    id: recordingDelegate
-                    readonly property bool matches: !page.filter || (recordingDelegate.title + " " + recordingDelegate.artist).toLowerCase().includes(page.filter.trim().toLowerCase())
+                id: songComponent
+                SongDelegate {
+                    id: songDelegate
                     width: ListView.view.width
-                    visible: matches
-                    height: matches ? implicitHeight : 0
-                    onExportRequested: {
-                        exportDialog.recordingPath = recordingDelegate.path;
-                        exportDialog.selectedFile = exportDialog.currentFolder + "/" + encodeURIComponent(recordingDelegate.fileName);
-                        exportDialog.open();
-                    }
-                    onDiscardRequested: StreamProxy.recordings.remove(recordingDelegate.index)
+                    onCopyRequested: root.copyText(root.songText(songDelegate.song), i18n("Song title copied"))
+                    onRemoveRequested: root.history = root.history.filter(s => s !== songDelegate.song)
                 }
             }
 
-            delegate: page.recordingsView ? recordingComponent : stationComponent
+            delegate: page.songsView ? songComponent : stationComponent
 
             onAtYEndChanged: if (atYEnd && page.discover && count > 0)
                 RadioBrowser.fetchMore()
@@ -600,11 +601,17 @@ Kirigami.ApplicationWindow {
                             text: i18n("Nothing played yet"),
                             explanation: ""
                         };
-                    case Main.View.Recordings:
+                    case Main.View.Songs:
+                        if (page.filter)
+                            return {
+                                icon: "search",
+                                text: i18n("No matching songs"),
+                                explanation: ""
+                            };
                         return {
-                            icon: "media-record",
-                            text: i18n("No recordings yet"),
-                            explanation: ""
+                            icon: "view-media-track",
+                            text: i18n("No songs yet"),
+                            explanation: i18n("Songs played on stations that name them show up here")
                         };
                     default:
                         return {
@@ -630,7 +637,6 @@ Kirigami.ApplicationWindow {
 
         footer: PlayerBar {
             visible: root.current !== null
-            recordingTitle: StreamProxy.recordings.recordingTitle
             station: root.current
             playing: root.playing
             connecting: root.connecting

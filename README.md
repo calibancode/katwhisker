@@ -28,4 +28,4 @@ cmake --build build
 
 ## License
 
-Code is GPL-3.0-or-later, the icon CC-BY-SA-4.0. Song recording is meant for personal use; respect the stations' terms.
+Code is GPL-3.0-or-later, the icon CC-BY-SA-4.0.

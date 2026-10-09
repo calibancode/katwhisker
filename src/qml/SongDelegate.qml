@@ -7,25 +7,20 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
-import org.kde.coreaddons as KCoreAddons
 
+// A song heard earlier, see root.history in Main.qml.
 QQC2.ItemDelegate {
     id: delegate
 
-    required property int index
-    required property string title
-    required property string artist
-    required property string station
-    required property string favicon
-    required property double duration
-    required property string fileName
-    required property string path
+    required property var modelData
+    readonly property var song: modelData
 
-    signal exportRequested()
-    signal discardRequested()
+    signal copyRequested()
+    signal removeRequested()
 
-    // Exporting is the one thing to do with a recording, so a click does it.
-    onClicked: exportRequested()
+    // Copying the title (to look it up elsewhere) is the one thing to do
+    // with a song, so a click does it.
+    onClicked: copyRequested()
 
     contentItem: RowLayout {
         spacing: Kirigami.Units.largeSpacing
@@ -33,7 +28,7 @@ QQC2.ItemDelegate {
         StationIcon {
             Layout.preferredWidth: Kirigami.Units.iconSizes.medium
             Layout.preferredHeight: Kirigami.Units.iconSizes.medium
-            source: delegate.favicon
+            source: delegate.song.favicon ?? ""
         }
 
         ColumnLayout {
@@ -42,7 +37,7 @@ QQC2.ItemDelegate {
 
             QQC2.Label {
                 Layout.fillWidth: true
-                text: delegate.title
+                text: delegate.song.title
                 textFormat: Text.PlainText
                 elide: Text.ElideRight
             }
@@ -52,20 +47,20 @@ QQC2.ItemDelegate {
                 opacity: 0.7
                 font: Kirigami.Theme.smallFont
                 textFormat: Text.PlainText
-                text: [delegate.artist, delegate.station, KCoreAddons.Format.formatDuration(delegate.duration, KCoreAddons.FormatTypes.FoldHours)]
+                text: [delegate.song.artist, delegate.song.station, new Date(delegate.song.time).toLocaleString(Qt.locale(), Locale.ShortFormat)]
                       .filter(s => s).join("  ·  ")
             }
         }
 
         IconToolButton {
-            icon.name: "document-save-as"
-            text: i18n("Export…")
-            onClicked: delegate.exportRequested()
+            icon.name: "edit-copy"
+            text: i18n("Copy Song Title")
+            onClicked: delegate.copyRequested()
         }
         IconToolButton {
             icon.name: "edit-delete"
-            text: i18n("Discard")
-            onClicked: delegate.discardRequested()
+            text: i18n("Remove")
+            onClicked: delegate.removeRequested()
         }
     }
 }

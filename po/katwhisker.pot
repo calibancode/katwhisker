@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: katwhisker\n"
 "Report-Msgid-Bugs-To: https://github.com/calibancode/katwhisker/issues\n"
-"POT-Creation-Date: 2026-09-29 03:49-0700\n"
+"POT-Creation-Date: 2026-10-08 22:36-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,232 +17,216 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/main.cpp:37
+#: src/main.cpp:39
 msgid "Katwhisker"
 msgstr ""
 
-#: src/main.cpp:38
+#: src/main.cpp:40
 msgid "A tiny web radio player powered by radio-browser.info"
 msgstr ""
 
-#: src/main.cpp:44
+#: src/main.cpp:46
 msgid "Developer"
 msgstr ""
 
-#: src/main.cpp:45
+#: src/main.cpp:47
 msgid "Station directory"
 msgstr ""
 
-#: src/recordings.cpp:159
-msgid "No such recording"
-msgstr ""
-
-#: src/qml/Main.qml:45
+#: src/qml/Main.qml:46 src/qml/Main.qml:103
 msgctxt "artist – song title"
 msgid "%1 – %2"
 msgstr ""
 
-#: src/qml/Main.qml:196
+#: src/qml/Main.qml:219
 msgid "Thanks for voting!"
 msgstr ""
 
-#: src/qml/Main.qml:232
-msgid "Couldn't export: %1"
-msgstr ""
-
-#: src/qml/Main.qml:232
-msgid "Recording exported"
-msgstr ""
-
-#: src/qml/Main.qml:265
+#: src/qml/Main.qml:273
 msgid "Search favorites…"
 msgstr ""
 
-#: src/qml/Main.qml:267 src/qml/Main.qml:291
+#: src/qml/Main.qml:275 src/qml/Main.qml:299
 msgid "Sort"
 msgstr ""
 
-#: src/qml/Main.qml:273
+#: src/qml/Main.qml:281
 msgid "Search recent…"
 msgstr ""
 
-#: src/qml/Main.qml:275
+#: src/qml/Main.qml:283 src/qml/Main.qml:291
 msgid "Clear History"
 msgstr ""
 
-#: src/qml/Main.qml:281
-msgid "Search recordings…"
-msgstr ""
-
-#: src/qml/Main.qml:283
-msgid "Discard All"
-msgstr ""
-
 #: src/qml/Main.qml:289
+msgid "Search songs…"
+msgstr ""
+
+#: src/qml/Main.qml:297
 msgid "Search in “%1”…"
 msgstr ""
 
-#: src/qml/Main.qml:289
+#: src/qml/Main.qml:297
 msgid "Search stations…"
 msgstr ""
 
-#: src/qml/Main.qml:316 src/qml/Main.qml:464
+#: src/qml/Main.qml:324 src/qml/Main.qml:472
 msgid "Discover"
 msgstr ""
 
-#: src/qml/Main.qml:316 src/qml/Main.qml:467
+#: src/qml/Main.qml:324 src/qml/Main.qml:475
 msgid "Favorites"
 msgstr ""
 
-#: src/qml/Main.qml:316 src/qml/Main.qml:470
+#: src/qml/Main.qml:324 src/qml/Main.qml:478
 msgid "Recent"
 msgstr ""
 
-#: src/qml/Main.qml:381
+#: src/qml/Main.qml:324 src/qml/Main.qml:481
+msgid "Songs"
+msgstr ""
+
+#: src/qml/Main.qml:389
 msgid "Most Popular"
 msgstr ""
 
-#: src/qml/Main.qml:393
+#: src/qml/Main.qml:401
 msgid "Trending"
 msgstr ""
 
-#: src/qml/Main.qml:405
+#: src/qml/Main.qml:413
 msgid "Top Voted"
 msgstr ""
 
-#: src/qml/Main.qml:423
+#: src/qml/Main.qml:431
 msgid "Order Added"
 msgstr ""
 
-#: src/qml/Main.qml:432
+#: src/qml/Main.qml:440
 msgid "Name"
 msgstr ""
 
-#: src/qml/Main.qml:444
+#: src/qml/Main.qml:452
 msgid "Menu"
 msgstr ""
 
-#: src/qml/Main.qml:450
+#: src/qml/Main.qml:458
 msgid "About Katwhisker"
 msgstr ""
 
-#: src/qml/Main.qml:473
-msgid "Recordings"
-msgstr ""
-
-#: src/qml/Main.qml:483
+#: src/qml/Main.qml:491
 msgid "Showing stations tagged “%1”"
 msgstr ""
 
-#: src/qml/Main.qml:487
+#: src/qml/Main.qml:495
 msgid "Show All"
 msgstr ""
 
-#: src/qml/Main.qml:503 src/qml/Main.qml:624
+#: src/qml/Main.qml:511 src/qml/Main.qml:631
 msgid "Retry"
 msgstr ""
 
-#: src/qml/Main.qml:528
+#: src/qml/Main.qml:536
 msgid "Stream URL copied"
 msgstr ""
 
-#: src/qml/Main.qml:575
-msgid "Couldn't reach radio-browser.info"
-msgstr ""
-
-#: src/qml/Main.qml:583
-msgid "No matching favorites"
-msgstr ""
-
-#: src/qml/Main.qml:588
-msgid "No favorites yet"
-msgstr ""
-
-#: src/qml/Main.qml:595
-msgid "No matching stations"
-msgstr ""
-
-#: src/qml/Main.qml:600
-msgid "Nothing played yet"
-msgstr ""
-
-#: src/qml/Main.qml:606
-msgid "No recordings yet"
-msgstr ""
-
-#: src/qml/Main.qml:612
-msgid "No stations found"
-msgstr ""
-
-#: src/qml/Main.qml:647
+#: src/qml/Main.qml:545 src/qml/Main.qml:653
 msgid "Song title copied"
 msgstr ""
 
-#: src/qml/PlayerBar.qml:103 src/qml/PlayerBar.qml:105
-msgid "Recording “%1”"
+#: src/qml/Main.qml:576
+msgid "Couldn't reach radio-browser.info"
 msgstr ""
 
-#: src/qml/PlayerBar.qml:120
+#: src/qml/Main.qml:584
+msgid "No matching favorites"
+msgstr ""
+
+#: src/qml/Main.qml:589
+msgid "No favorites yet"
+msgstr ""
+
+#: src/qml/Main.qml:596
+msgid "No matching stations"
+msgstr ""
+
+#: src/qml/Main.qml:601
+msgid "Nothing played yet"
+msgstr ""
+
+#: src/qml/Main.qml:608
+msgid "No matching songs"
+msgstr ""
+
+#: src/qml/Main.qml:613
+msgid "No songs yet"
+msgstr ""
+
+#: src/qml/Main.qml:614
+msgid "Songs played on stations that name them show up here"
+msgstr ""
+
+#: src/qml/Main.qml:619
+msgid "No stations found"
+msgstr ""
+
+#: src/qml/PlayerBar.qml:69 src/qml/SongDelegate.qml:57
 msgid "Copy Song Title"
 msgstr ""
 
-#: src/qml/PlayerBar.qml:134
+#: src/qml/PlayerBar.qml:83
 msgid "Connecting…"
 msgstr ""
 
-#: src/qml/PlayerBar.qml:136
+#: src/qml/PlayerBar.qml:85
 msgid "Live"
 msgstr ""
 
-#: src/qml/PlayerBar.qml:136
+#: src/qml/PlayerBar.qml:85
 msgid "Stopped"
 msgstr ""
 
-#: src/qml/PlayerBar.qml:142 src/qml/StationDelegate.qml:43
+#: src/qml/PlayerBar.qml:91 src/qml/StationDelegate.qml:43
 #: src/qml/StationDelegate.qml:129
 msgid "Remove from Favorites"
 msgstr ""
 
-#: src/qml/PlayerBar.qml:142 src/qml/StationDelegate.qml:43
+#: src/qml/PlayerBar.qml:91 src/qml/StationDelegate.qml:43
 #: src/qml/StationDelegate.qml:129
 msgid "Add to Favorites"
 msgstr ""
 
-#: src/qml/PlayerBar.qml:149
+#: src/qml/PlayerBar.qml:98
 msgid "Previous Station"
 msgstr ""
 
-#: src/qml/PlayerBar.qml:155
+#: src/qml/PlayerBar.qml:104
 msgid "Stop"
 msgstr ""
 
-#: src/qml/PlayerBar.qml:155 src/qml/StationDelegate.qml:38
+#: src/qml/PlayerBar.qml:104 src/qml/StationDelegate.qml:38
 msgid "Play"
 msgstr ""
 
-#: src/qml/PlayerBar.qml:168
+#: src/qml/PlayerBar.qml:117
 msgid "Next Station"
 msgstr ""
 
-#: src/qml/PlayerBar.qml:178
+#: src/qml/PlayerBar.qml:127
 msgid "Unmute"
 msgstr ""
 
-#: src/qml/PlayerBar.qml:178
+#: src/qml/PlayerBar.qml:127
 msgid "Mute"
 msgstr ""
 
-#: src/qml/PlayerBar.qml:180
+#: src/qml/PlayerBar.qml:129
 #, javascript-format
 msgid "Volume: %1%"
 msgstr ""
 
-#: src/qml/RecordingDelegate.qml:61
-msgid "Export…"
-msgstr ""
-
-#: src/qml/RecordingDelegate.qml:66
-msgid "Discard"
+#: src/qml/SongDelegate.qml:62
+msgid "Remove"
 msgstr ""
 
 #: src/qml/StationDelegate.qml:49
